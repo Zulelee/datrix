@@ -100,7 +100,14 @@ export default function Hero() {
                   className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#3d0e15] mb-8 font-ibm-plex leading-tight tracking-tight"
                   layout
                 >
-                  <motion.span className="block mb-2">
+                  <motion.span 
+                    className="block mb-2"
+                    key={scrollYProgress.get() < 0.33 ? 'phase1' : scrollYProgress.get() < 0.66 ? 'phase2' : 'phase3'}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.5 }}
+                  >
                     {scrollYProgress.get() < 0.33 ? "TURN RAW DATA INTO" :
                      scrollYProgress.get() < 0.66 ? "INSTANT STRUCTURE" :
                      "FROM DATA TO DECISIONS"}
@@ -122,6 +129,10 @@ export default function Hero() {
                   className="text-base sm:text-lg md:text-xl lg:text-xl font-medium text-[#6e1d27] mb-12 leading-relaxed font-ibm-plex" 
                   style={{ textShadow: '0 1px 2px rgba(61, 14, 21, 0.1)' }}
                   layout
+                  key={scrollYProgress.get() < 0.33 ? 'sub1' : scrollYProgress.get() < 0.66 ? 'sub2' : 'sub3'}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6 }}
                 >
                   {scrollYProgress.get() < 0.33 ? "Let Datrix handle the chaos and surface the insights." :
                    scrollYProgress.get() < 0.66 ? "Datrix organizes raw inputs into smart, editable tables — ready for your CRM or database." :
@@ -164,7 +175,7 @@ export default function Hero() {
               >
                 <div className="relative w-full h-[500px] flex items-center justify-center">
                   
-                  {/* PHASE 1: Icons orbiting and converging (from original hero) */}
+                  {/* PHASE 1: Icons orbiting and converging */}
                   <div className="absolute inset-0 flex items-center justify-center">
                     {icons.map((Icon, i) => {
                       const angle = (i * 72) - 90;
