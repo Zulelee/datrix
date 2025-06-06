@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Play, Mail, FileText, FileSpreadsheet, File, Database, BarChart3, PieChart, TrendingUp, Users, Calendar, DollarSign } from 'lucide-react';
 import { FlickeringGrid } from '@/components/ui/flickering-grid';
@@ -9,7 +9,6 @@ import TypewriterText from './TypewriterText';
 import { motion, useScroll, useTransform } from 'framer-motion';
 
 export default function Hero() {
-  const [mounted, setMounted] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   
   const { scrollYProgress } = useScroll({
@@ -33,14 +32,6 @@ export default function Hero() {
       'linear-gradient(135deg, #ebe1d1 0%, #e6d6c7 50%, #e1d1c2 100%)'
     ]
   );
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) {
-    return null;
-  }
 
   const icons = [Mail, FileText, FileSpreadsheet, File, Database];
 
