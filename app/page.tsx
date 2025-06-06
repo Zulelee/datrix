@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import Hero from '@/components/Hero';
 import LoadingScreen from '@/components/LoadingScreen';
-import ScrollJourney from '@/components/ScrollJourney';
 
 export default function Home() {
   const [showLoading, setShowLoading] = useState(true);
@@ -26,10 +25,7 @@ export default function Home() {
       {showLoading ? (
         <LoadingScreen onComplete={handleLoadingComplete} />
       ) : (
-        <>
-          <Hero />
-          <ScrollJourney />
-        </>
+        <Hero />
       )}
     </main>
   );
