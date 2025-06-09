@@ -60,7 +60,7 @@ export default function AuthPage() {
         <Link href="/">
           <Button
             variant="outline"
-            className="hand-drawn-border bg-white/80 backdrop-blur-sm border-2 border-[#6e1d27] text-[#6e1d27] hover:bg-[#6e1d27] hover:text-white transition-all duration-300 font-ibm-plex"
+            className="hand-drawn-border bg-transparent backdrop-blur-sm border-2 border-[#6e1d27] text-[#6e1d27] hover:bg-[#6e1d27] hover:text-white transition-all duration-300 font-ibm-plex"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Home
@@ -76,8 +76,8 @@ export default function AuthPage() {
           transition={{ duration: 0.6, ease: "easeOut" }}
           className="w-full max-w-md"
         >
-          {/* Hand-drawn container */}
-          <div className="hand-drawn-container bg-white/90 backdrop-blur-sm p-8 relative">
+          {/* Hand-drawn container with transparent background */}
+          <div className="hand-drawn-container bg-transparent backdrop-blur-sm p-8 relative">
             {/* Decorative corner doodles */}
             <div className="absolute top-2 left-2 w-6 h-6 opacity-30">
               <svg viewBox="0 0 24 24" className="w-full h-full text-[#6e1d27]">
