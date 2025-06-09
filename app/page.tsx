@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Hero from '@/components/Hero';
-import LoadingScreen from '@/components/LoadingScreen';
+import ScrollSection from '@/components/ScrollSection';
 
 export default function Home() {
   const [mounted, setMounted] = useState(false);
@@ -17,7 +17,8 @@ export default function Home() {
 
   return (
     <main className="min-h-screen">
-      <LoadingScreen onComplete={() => {}} showWelcome={true} />
+      <Hero />
+      <ScrollSection />
     </main>
   );
 }

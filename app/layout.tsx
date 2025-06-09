@@ -1,5 +1,6 @@
 import './globals.css';
 import type { Metadata } from 'next';
+import LoadingScreen from '@/components/LoadingScreen';
 
 export const metadata: Metadata = {
   title: 'Datrix - AI-Powered Data Harmony',
@@ -19,7 +20,10 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="font-ibm-plex">{children}</body>
+      <body className="font-ibm-plex">
+        <LoadingScreen />
+        {children}
+      </body>
     </html>
   );
 }

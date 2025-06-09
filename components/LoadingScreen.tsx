@@ -3,19 +3,21 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AppleHelloEnglishEffect } from '@/components/ui/apple-hello-effect';
-import Hero from './Hero';
+import { usePathname } from 'next/navigation';
 
-interface LoadingScreenProps {
-  onComplete: () => void;
-  showWelcome?: boolean; // New prop to control welcome animation
-}
-
-export default function LoadingScreen({ onComplete, showWelcome = false }: LoadingScreenProps) {
+export default function LoadingScreen() {
   const [showTypewriter, setShowTypewriter] = useState(false);
   const [typewriterText, setTypewriterText] = useState('');
-  const [showHero, setShowHero] = useState(false);
+  const [showContent, setShowContent] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const pathname = usePathname();
 
   const welcomeText = 'Welcome to Datrix';
+  const isLandingPage = pathname === '/';
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Handle Apple Hello animation completion
   const handleHelloComplete = () => {
@@ -24,9 +26,9 @@ export default function LoadingScreen({ onComplete, showWelcome = false }: Loadi
     }, 500); // Small delay after hello completes
   };
 
-  // Typewriter effect
+  // Typewriter effect for landing page
   useEffect(() => {
-    if (!showTypewriter) return;
+    if (!showTypewriter || !isLandingPage) return;
 
     let currentIndex = 0;
     const typeInterval = setInterval(() => {
@@ -35,124 +37,119 @@ export default function LoadingScreen({ onComplete, showWelcome = false }: Loadi
         currentIndex++;
       } else {
         clearInterval(typeInterval);
-        // Show hero after typewriter completes + 1 second pause
+        // Show content after typewriter completes + 1 second pause
         setTimeout(() => {
-          setShowHero(true);
+          setShowContent(true);
         }, 1000);
       }
     }, 80); // Typing speed
 
     return () => clearInterval(typeInterval);
-  }, [showTypewriter]);
+  }, [showTypewriter, isLandingPage]);
 
-  // For non-welcome pages, show simple loading for 2 seconds
+  // For non-landing pages, show simple loading for 2 seconds
   useEffect(() => {
-    if (!showWelcome) {
+    if (!isLandingPage && mounted) {
       const timer = setTimeout(() => {
-        onComplete();
+        setShowContent(true);
       }, 2000);
       return () => clearTimeout(timer);
     }
-  }, [showWelcome, onComplete]);
+  }, [isLandingPage, mounted]);
 
-  // Simple circular loading animation for other pages
-  if (!showWelcome) {
-    return (
-      <motion.div
-        className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-[#f9efe8] via-[#f5e6d3] to-[#f0dcc4]"
-        initial={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.5, ease: "easeInOut" }}
-      >
-        {/* Circular Loading Animation */}
-        <div className="relative">
-          <motion.div
-            className="w-16 h-16 border-4 border-[#6e1d27]/20 rounded-full"
-            animate={{ rotate: 360 }}
-            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          />
-          <motion.div
-            className="absolute inset-0 w-16 h-16 border-4 border-transparent border-t-[#6e1d27] rounded-full"
-            animate={{ rotate: 360 }}
-            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          />
-        </div>
-
-        {/* Optional loading text */}
-        <motion.p
-          className="absolute mt-24 text-[#6e1d27] font-ibm-plex font-medium"
-          animate={{ opacity: [0.5, 1, 0.5] }}
-          transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-        >
-          Loading...
-        </motion.p>
-
-        {/* Subtle background pattern */}
-        <div className="absolute inset-0 opacity-5">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,_#6e1d27_1px,_transparent_1px)] bg-[length:40px_40px]" />
-        </div>
-      </motion.div>
-    );
+  if (!mounted) {
+    return null;
   }
 
-  // Welcome animation for landing page
+  // Animated dots for loading text
+  const AnimatedDots = () => {
+    return (
+      <span className="inline-flex">
+        <motion.span
+          animate={{ opacity: [0, 1, 0] }}
+          transition={{ duration: 1.5, repeat: Infinity, delay: 0 }}
+        >
+          .
+        </motion.span>
+        <motion.span
+          animate={{ opacity: [0, 1, 0] }}
+          transition={{ duration: 1.5, repeat: Infinity, delay: 0.5 }}
+        >
+          .
+        </motion.span>
+        <motion.span
+          animate={{ opacity: [0, 1, 0] }}
+          transition={{ duration: 1.5, repeat: Infinity, delay: 1 }}
+        >
+          .
+        </motion.span>
+      </span>
+    );
+  };
+
   return (
     <>
       <AnimatePresence>
-        {!showHero && (
+        {!showContent && (
           <motion.div
-            className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-br from-[#f9efe8] via-[#f5e6d3] to-[#f0dcc4]"
+            className="fixed inset-0 z-50 bg-gradient-to-br from-[#f9efe8] via-[#f5e6d3] to-[#f0dcc4] overflow-hidden"
             initial={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.8, ease: "easeInOut" }}
           >
-            {/* Apple Hello Effect */}
-            <div className="mb-8">
-              <AppleHelloEnglishEffect
-                className="h-16 sm:h-20 md:h-24 text-[#6e1d27]"
-                speed={1.2}
-                onAnimationComplete={handleHelloComplete}
-              />
-            </div>
-
-            {/* Typewriter Text */}
-            <AnimatePresence>
-              {showTypewriter && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, ease: "easeOut" }}
-                  className="text-center"
-                >
-                  <h2 className="text-xl sm:text-2xl md:text-3xl font-medium text-[#3d0e15] font-ibm-plex tracking-wide">
-                    {typewriterText}
-                    <motion.span
-                      className="inline-block w-0.5 h-6 sm:h-8 md:h-10 bg-[#6e1d27] ml-1"
-                      animate={{ opacity: [1, 0] }}
-                      transition={{ duration: 0.8, repeat: Infinity, ease: "easeInOut" }}
+            {/* Container for perfect centering */}
+            <div className="w-full h-full flex items-center justify-center p-4">
+              {isLandingPage ? (
+                <div className="flex flex-col items-center justify-center w-full max-w-md mx-auto text-center">
+                  {/* Apple Hello Effect for Landing Page */}
+                  <div className="mb-6 sm:mb-8">
+                    <AppleHelloEnglishEffect
+                      className="h-12 sm:h-16 md:h-20 lg:h-24 text-[#6e1d27]"
+                      speed={1.2}
+                      onAnimationComplete={handleHelloComplete}
                     />
-                  </h2>
-                </motion.div>
+                  </div>
+
+                  {/* Typewriter Text for Landing Page */}
+                  <AnimatePresence>
+                    {showTypewriter && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5, ease: "easeOut" }}
+                        className="w-full"
+                      >
+                        <h2 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-medium text-[#3d0e15] font-ibm-plex tracking-wide">
+                          {typewriterText}
+                          <motion.span
+                            className="inline-block w-0.5 h-5 sm:h-6 md:h-8 lg:h-10 bg-[#6e1d27] ml-1"
+                            animate={{ opacity: [1, 0] }}
+                            transition={{ duration: 0.8, repeat: Infinity, ease: "easeInOut" }}
+                          />
+                        </h2>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center">
+                  {/* Simple Loading Text for Other Pages */}
+                  <motion.h2
+                    className="text-2xl sm:text-3xl md:text-4xl font-medium text-[#3d0e15] font-ibm-plex tracking-wide"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, ease: "easeOut" }}
+                  >
+                    LOADING<AnimatedDots />
+                  </motion.h2>
+                </div>
               )}
-            </AnimatePresence>
+            </div>
 
             {/* Subtle background pattern */}
-            <div className="absolute inset-0 opacity-5">
+            <div className="absolute inset-0 opacity-5 pointer-events-none">
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,_#6e1d27_1px,_transparent_1px)] bg-[length:40px_40px]" />
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Hero Section */}
-      <AnimatePresence>
-        {showHero && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.8, ease: "easeInOut" }}
-          >
-            <Hero />
           </motion.div>
         )}
       </AnimatePresence>

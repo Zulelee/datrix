@@ -55,21 +55,23 @@ export default function AuthPage() {
         />
       </div>
 
-      {/* Back to Home Button */}
-      <div className="absolute top-6 left-6 z-20">
+      {/* Back to Home Button - Fixed positioning for mobile */}
+      <div className="absolute top-4 left-4 z-20 sm:top-6 sm:left-6">
         <Link href="/">
           <Button
             variant="outline"
-            className="hand-drawn-border bg-transparent backdrop-blur-sm border-2 border-[#6e1d27] text-[#6e1d27] hover:bg-[#6e1d27] hover:text-white transition-all duration-300 font-ibm-plex"
+            size="sm"
+            className="hand-drawn-border bg-transparent backdrop-blur-sm border-2 border-[#6e1d27] text-[#6e1d27] hover:bg-[#6e1d27] hover:text-white transition-all duration-300 font-ibm-plex text-xs sm:text-sm px-2 py-1 sm:px-3 sm:py-2"
           >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Home
+            <ArrowLeft className="mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4" />
+            <span className="hidden xs:inline">Back to Home</span>
+            <span className="xs:hidden">Back</span>
           </Button>
         </Link>
       </div>
 
       {/* Main Content */}
-      <div className="relative z-10 flex items-center justify-center min-h-screen px-4 sm:px-6 lg:px-8">
+      <div className="relative z-10 flex items-center justify-center min-h-screen px-4 sm:px-6 lg:px-8 pt-16 sm:pt-0">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -77,9 +79,9 @@ export default function AuthPage() {
           className="w-full max-w-md"
         >
           {/* Hand-drawn container with transparent background */}
-          <div className="hand-drawn-container bg-transparent backdrop-blur-sm p-8 relative">
+          <div className="hand-drawn-container bg-transparent backdrop-blur-sm p-6 sm:p-8 relative">
             {/* Decorative corner doodles */}
-            <div className="absolute top-2 left-2 w-6 h-6 opacity-30">
+            <div className="absolute top-2 left-2 w-4 h-4 sm:w-6 sm:h-6 opacity-30">
               <svg viewBox="0 0 24 24" className="w-full h-full text-[#6e1d27]">
                 <path
                   d="M3 3 L21 3 L21 21 L3 21 Z"
@@ -91,7 +93,7 @@ export default function AuthPage() {
                 />
               </svg>
             </div>
-            <div className="absolute top-2 right-2 w-6 h-6 opacity-30">
+            <div className="absolute top-2 right-2 w-4 h-4 sm:w-6 sm:h-6 opacity-30">
               <svg viewBox="0 0 24 24" className="w-full h-full text-[#6e1d27]">
                 <circle
                   cx="12"
@@ -106,9 +108,9 @@ export default function AuthPage() {
             </div>
 
             {/* Header */}
-            <div className="text-center mb-8">
+            <div className="text-center mb-6 sm:mb-8">
               <motion.h1
-                className="text-3xl font-bold text-[#3d0e15] mb-2 font-ibm-plex hand-drawn-text"
+                className="text-2xl sm:text-3xl font-bold text-[#3d0e15] mb-2 font-ibm-plex hand-drawn-text"
                 initial={{ scale: 0.9 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: 0.2, duration: 0.4 }}
@@ -116,7 +118,7 @@ export default function AuthPage() {
                 {isLogin ? 'Welcome Back!' : 'Join Datrix'}
               </motion.h1>
               <motion.p
-                className="text-[#6e1d27] font-ibm-plex"
+                className="text-[#6e1d27] font-ibm-plex text-sm sm:text-base"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.4, duration: 0.4 }}
@@ -126,7 +128,7 @@ export default function AuthPage() {
             </div>
 
             {/* Form */}
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
               <AnimatePresence mode="wait">
                 {!isLogin && (
                   <motion.div
@@ -136,18 +138,18 @@ export default function AuthPage() {
                     transition={{ duration: 0.3 }}
                     className="space-y-2"
                   >
-                    <Label htmlFor="name" className="text-[#3d0e15] font-ibm-plex font-medium hand-drawn-text">
+                    <Label htmlFor="name" className="text-[#3d0e15] font-ibm-plex font-medium hand-drawn-text text-sm sm:text-base">
                       Full Name
                     </Label>
                     <div className="relative">
-                      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#6e1d27] h-5 w-5" />
+                      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#6e1d27] h-4 w-4 sm:h-5 sm:w-5" />
                       <Input
                         id="name"
                         name="name"
                         type="text"
                         value={formData.name}
                         onChange={handleInputChange}
-                        className="hand-drawn-input pl-10 bg-white/80 border-2 border-[#6e1d27] text-[#3d0e15] placeholder-[#6e1d27]/60 font-ibm-plex"
+                        className="hand-drawn-input pl-9 sm:pl-10 bg-white/80 border-2 border-[#6e1d27] text-[#3d0e15] placeholder-[#6e1d27]/60 font-ibm-plex text-sm sm:text-base h-10 sm:h-12"
                         placeholder="Enter your full name"
                         required={!isLogin}
                       />
@@ -157,18 +159,18 @@ export default function AuthPage() {
               </AnimatePresence>
 
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-[#3d0e15] font-ibm-plex font-medium hand-drawn-text">
+                <Label htmlFor="email" className="text-[#3d0e15] font-ibm-plex font-medium hand-drawn-text text-sm sm:text-base">
                   Email Address
                 </Label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#6e1d27] h-5 w-5" />
+                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#6e1d27] h-4 w-4 sm:h-5 sm:w-5" />
                   <Input
                     id="email"
                     name="email"
                     type="email"
                     value={formData.email}
                     onChange={handleInputChange}
-                    className="hand-drawn-input pl-10 bg-white/80 border-2 border-[#6e1d27] text-[#3d0e15] placeholder-[#6e1d27]/60 font-ibm-plex"
+                    className="hand-drawn-input pl-9 sm:pl-10 bg-white/80 border-2 border-[#6e1d27] text-[#3d0e15] placeholder-[#6e1d27]/60 font-ibm-plex text-sm sm:text-base h-10 sm:h-12"
                     placeholder="Enter your email"
                     required
                   />
@@ -176,18 +178,18 @@ export default function AuthPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-[#3d0e15] font-ibm-plex font-medium hand-drawn-text">
+                <Label htmlFor="password" className="text-[#3d0e15] font-ibm-plex font-medium hand-drawn-text text-sm sm:text-base">
                   Password
                 </Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#6e1d27] h-5 w-5" />
+                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#6e1d27] h-4 w-4 sm:h-5 sm:w-5" />
                   <Input
                     id="password"
                     name="password"
                     type={showPassword ? 'text' : 'password'}
                     value={formData.password}
                     onChange={handleInputChange}
-                    className="hand-drawn-input pl-10 pr-10 bg-white/80 border-2 border-[#6e1d27] text-[#3d0e15] placeholder-[#6e1d27]/60 font-ibm-plex"
+                    className="hand-drawn-input pl-9 sm:pl-10 pr-9 sm:pr-10 bg-white/80 border-2 border-[#6e1d27] text-[#3d0e15] placeholder-[#6e1d27]/60 font-ibm-plex text-sm sm:text-base h-10 sm:h-12"
                     placeholder="Enter your password"
                     required
                   />
@@ -196,7 +198,7 @@ export default function AuthPage() {
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#6e1d27] hover:text-[#3d0e15] transition-colors"
                   >
-                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    {showPassword ? <EyeOff className="h-4 w-4 sm:h-5 sm:w-5" /> : <Eye className="h-4 w-4 sm:h-5 sm:w-5" />}
                   </button>
                 </div>
               </div>
@@ -210,18 +212,18 @@ export default function AuthPage() {
                     transition={{ duration: 0.3 }}
                     className="space-y-2"
                   >
-                    <Label htmlFor="confirmPassword" className="text-[#3d0e15] font-ibm-plex font-medium hand-drawn-text">
+                    <Label htmlFor="confirmPassword" className="text-[#3d0e15] font-ibm-plex font-medium hand-drawn-text text-sm sm:text-base">
                       Confirm Password
                     </Label>
                     <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#6e1d27] h-5 w-5" />
+                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#6e1d27] h-4 w-4 sm:h-5 sm:w-5" />
                       <Input
                         id="confirmPassword"
                         name="confirmPassword"
                         type="password"
                         value={formData.confirmPassword}
                         onChange={handleInputChange}
-                        className="hand-drawn-input pl-10 bg-white/80 border-2 border-[#6e1d27] text-[#3d0e15] placeholder-[#6e1d27]/60 font-ibm-plex"
+                        className="hand-drawn-input pl-9 sm:pl-10 bg-white/80 border-2 border-[#6e1d27] text-[#3d0e15] placeholder-[#6e1d27]/60 font-ibm-plex text-sm sm:text-base h-10 sm:h-12"
                         placeholder="Confirm your password"
                         required={!isLogin}
                       />
@@ -237,7 +239,7 @@ export default function AuthPage() {
               >
                 <Button
                   type="submit"
-                  className="w-full hand-drawn-button bg-[#6e1d27] hover:bg-[#912d3c] text-white py-3 text-lg font-semibold font-ibm-plex transition-all duration-300 transform hover:scale-105"
+                  className="w-full hand-drawn-button bg-[#6e1d27] hover:bg-[#912d3c] text-white py-2 sm:py-3 text-base sm:text-lg font-semibold font-ibm-plex transition-all duration-300 transform hover:scale-105 h-10 sm:h-12"
                 >
                   {isLogin ? 'Sign In' : 'Create Account'}
                 </Button>
@@ -248,7 +250,7 @@ export default function AuthPage() {
                 <div className="text-center">
                   <button
                     type="button"
-                    className="text-[#6e1d27] hover:text-[#3d0e15] font-ibm-plex text-sm underline transition-colors hand-drawn-text"
+                    className="text-[#6e1d27] hover:text-[#3d0e15] font-ibm-plex text-xs sm:text-sm underline transition-colors hand-drawn-text"
                   >
                     Forgot your password?
                   </button>
@@ -257,8 +259,8 @@ export default function AuthPage() {
             </form>
 
             {/* Toggle between login/signup */}
-            <div className="mt-8 text-center">
-              <p className="text-[#6e1d27] font-ibm-plex">
+            <div className="mt-6 sm:mt-8 text-center">
+              <p className="text-[#6e1d27] font-ibm-plex text-sm sm:text-base">
                 {isLogin ? "Don't have an account?" : "Already have an account?"}
                 <button
                   onClick={() => setIsLogin(!isLogin)}
@@ -270,7 +272,7 @@ export default function AuthPage() {
             </div>
 
             {/* Decorative bottom doodles */}
-            <div className="absolute bottom-2 left-2 w-8 h-4 opacity-20">
+            <div className="absolute bottom-2 left-2 w-6 h-3 sm:w-8 sm:h-4 opacity-20">
               <svg viewBox="0 0 32 16" className="w-full h-full text-[#6e1d27]">
                 <path
                   d="M2 8 Q8 2 16 8 T30 8"
@@ -282,7 +284,7 @@ export default function AuthPage() {
                 />
               </svg>
             </div>
-            <div className="absolute bottom-2 right-2 w-6 h-6 opacity-20">
+            <div className="absolute bottom-2 right-2 w-4 h-4 sm:w-6 sm:h-6 opacity-20">
               <svg viewBox="0 0 24 24" className="w-full h-full text-[#6e1d27]">
                 <path
                   d="M12 2 L22 12 L12 22 L2 12 Z"
