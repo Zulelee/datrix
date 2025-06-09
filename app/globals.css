@@ -153,3 +153,116 @@ html {
 .icon-smooth {
   transition: transform 0.05s linear;
 }
+
+/* Hand-drawn styling for auth page */
+.hand-drawn-container {
+  border-radius: 20px;
+  position: relative;
+  box-shadow: 
+    0 0 0 2px #6e1d27,
+    5px 5px 0 0 rgba(110, 29, 39, 0.1),
+    10px 10px 0 0 rgba(110, 29, 39, 0.05);
+  transform: rotate(-0.5deg);
+  transition: all 0.3s ease;
+}
+
+.hand-drawn-container:hover {
+  transform: rotate(0deg) scale(1.02);
+  box-shadow: 
+    0 0 0 2px #6e1d27,
+    8px 8px 0 0 rgba(110, 29, 39, 0.15),
+    15px 15px 0 0 rgba(110, 29, 39, 0.08);
+}
+
+.hand-drawn-container::before {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  right: -3px;
+  bottom: -3px;
+  border: 2px solid #6e1d27;
+  border-radius: 20px;
+  opacity: 0.3;
+  transform: rotate(1deg);
+  z-index: -1;
+}
+
+.hand-drawn-input {
+  border-radius: 12px;
+  position: relative;
+  transform: rotate(-0.2deg);
+  transition: all 0.2s ease;
+  box-shadow: 2px 2px 0 0 rgba(110, 29, 39, 0.1);
+}
+
+.hand-drawn-input:focus {
+  transform: rotate(0deg);
+  box-shadow: 3px 3px 0 0 rgba(110, 29, 39, 0.2);
+  border-color: #912d3c;
+}
+
+.hand-drawn-button {
+  border-radius: 15px;
+  position: relative;
+  transform: rotate(-0.3deg);
+  transition: all 0.2s ease;
+  box-shadow: 
+    0 0 0 2px #3d0e15,
+    4px 4px 0 0 rgba(61, 14, 21, 0.2);
+}
+
+.hand-drawn-button:hover {
+  transform: rotate(0deg) translateY(-2px);
+  box-shadow: 
+    0 0 0 2px #3d0e15,
+    6px 6px 0 0 rgba(61, 14, 21, 0.3);
+}
+
+.hand-drawn-border {
+  border-radius: 12px;
+  position: relative;
+  transform: rotate(-0.2deg);
+  transition: all 0.2s ease;
+  box-shadow: 2px 2px 0 0 rgba(110, 29, 39, 0.1);
+}
+
+.hand-drawn-border:hover {
+  transform: rotate(0deg);
+  box-shadow: 3px 3px 0 0 rgba(110, 29, 39, 0.2);
+}
+
+.hand-drawn-text {
+  position: relative;
+  display: inline-block;
+  transform: rotate(-0.1deg);
+  transition: transform 0.2s ease;
+}
+
+.hand-drawn-text:hover {
+  transform: rotate(0deg);
+}
+
+.hand-drawn-path {
+  stroke-dasharray: 1000;
+  stroke-dashoffset: 1000;
+  animation: draw 2s ease-in-out forwards;
+}
+
+@keyframes draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Subtle wobble animation for decorative elements */
+@keyframes wobble {
+  0%, 100% { transform: rotate(-0.5deg); }
+  25% { transform: rotate(0.5deg); }
+  50% { transform: rotate(-0.3deg); }
+  75% { transform: rotate(0.3deg); }
+}
+
+.hand-drawn-container {
+  animation: wobble 8s ease-in-out infinite;
+}
