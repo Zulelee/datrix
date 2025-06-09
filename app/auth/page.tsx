@@ -8,17 +8,24 @@ import { FlickeringGrid } from '@/components/ui/flickering-grid';
 import { Eye, EyeOff, Mail, Lock, User, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
+import { supabase } from '@/lib/supabaseClient';
+import { useRouter } from 'next/navigation';
 
 export default function AuthPage() {
   const [mounted, setMounted] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
     confirmPassword: ''
   });
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+
+  const router = useRouter();
 
   useEffect(() => {
     setMounted(true);
@@ -34,12 +41,54 @@ export default function AuthPage() {
       [e.target.name]: e.target.value
     });
   };
+  
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission here
-    console.log('Form submitted:', formData);
+    setLoading(true);
+    setError(null);
+  
+    if (isLogin) {
+      // Login
+      const { email, password } = formData;
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        setError(error.message);
+      } else {
+        router.push('/');
+      }
+    } else {
+      // Signup
+      if (!isLogin && formData.password !== formData.confirmPassword) {
+        setError("Passwords do not match");
+        setLoading(false);
+        return;
+      }
+      const { email, password, name } = formData;
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { name } }
+      });
+      if (error) {
+        setError(error.message);
+      } else {
+        setShowConfirmDialog(true);
+        setFormData({
+          name: '',
+          email: '',
+          password: '',
+          confirmPassword: ''
+        });
+      }
+    }
+    setLoading(false);
   };
+  // const handleSubmit = (e: React.FormEvent) => {
+  //   e.preventDefault();
+  //   // Handle form submission here
+  //   console.log('Form submitted:', formData);
+  // };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#f9efe8] via-[#f5e6d3] to-[#f0dcc4] relative overflow-hidden">
@@ -239,9 +288,10 @@ export default function AuthPage() {
               >
                 <Button
                   type="submit"
+                  disabled={loading}
                   className="w-full hand-drawn-button bg-[#6e1d27] hover:bg-[#912d3c] text-white py-2 sm:py-3 text-base sm:text-lg font-semibold font-ibm-plex transition-all duration-300 transform hover:scale-105 h-10 sm:h-12"
                 >
-                  {isLogin ? 'Sign In' : 'Create Account'}
+                  {loading ? 'Loading...' : isLogin ? 'Sign In' : 'Create Account'}
                 </Button>
               </motion.div>
 
@@ -255,6 +305,10 @@ export default function AuthPage() {
                     Forgot your password?
                   </button>
                 </div>
+              )}
+
+              {error && (
+                <div className="text-red-600 text-sm text-center">{error}</div>
               )}
             </form>
 
@@ -302,6 +356,48 @@ export default function AuthPage() {
 
       {/* Gradient Overlay for Depth */}
       <div className="absolute inset-0 bg-gradient-to-t from-[#f9efe8]/20 via-transparent to-transparent pointer-events-none" />
+
+      {showConfirmDialog && (
+        <div className="fixed inset-0 flex items-center justify-center bg-[#f9efe8]/80 z-50">
+          <div className="relative bg-gradient-to-br from-[#f9efe8] via-[#f5e6d3] to-[#f0dcc4] rounded-2xl border-2 border-[#6e1d27] shadow-xl p-8 max-w-sm w-full text-center hand-drawn-container">
+            {/* Decorative corner doodles */}
+            <div className="absolute top-2 left-2 w-4 h-4 opacity-30">
+              <svg viewBox="0 0 24 24" className="w-full h-full text-[#6e1d27]">
+                <path d="M3 3 L21 3 L21 21 L3 21 Z" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="hand-drawn-path" />
+              </svg>
+            </div>
+            <div className="absolute top-2 right-2 w-4 h-4 opacity-30">
+              <svg viewBox="0 0 24 24" className="w-full h-full text-[#6e1d27]">
+                <circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" strokeWidth="1.5" className="hand-drawn-path" />
+              </svg>
+            </div>
+            <h2 className="text-2xl font-bold mb-2 text-[#3d0e15] font-ibm-plex hand-drawn-text">Confirm Your Email</h2>
+            <p className="mb-4 text-[#6e1d27] font-ibm-plex text-base hand-drawn-text">
+              We've sent a confirmation link to your email. Please check your inbox and follow the instructions to activate your account.
+            </p>
+            <Button
+              onClick={() => {
+                setShowConfirmDialog(false);
+                setIsLogin(true);
+              }}
+              className="hand-drawn-button bg-[#6e1d27] hover:bg-[#912d3c] text-white py-2 px-6 text-base font-semibold font-ibm-plex transition-all duration-300 mt-2 border-2 border-[#6e1d27]"
+            >
+              Close
+            </Button>
+            {/* Decorative bottom doodles */}
+            <div className="absolute bottom-2 left-2 w-6 h-3 opacity-20">
+              <svg viewBox="0 0 32 16" className="w-full h-full text-[#6e1d27]">
+                <path d="M2 8 Q8 2 16 8 T30 8" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="hand-drawn-path" />
+              </svg>
+            </div>
+            <div className="absolute bottom-2 right-2 w-4 h-4 opacity-20">
+              <svg viewBox="0 0 24 24" className="w-full h-full text-[#6e1d27]">
+                <path d="M12 2 L22 12 L12 22 L2 12 Z" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="hand-drawn-path" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

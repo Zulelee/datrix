@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Hero from '@/components/Hero';
-import ScrollSection from '@/components/ScrollSection';
+// import ScrollSection from '@/components/ScrollSection';
 
 export default function Home() {
   const [mounted, setMounted] = useState(false);
@@ -18,7 +18,7 @@ export default function Home() {
   return (
     <main className="min-h-screen">
       <Hero />
-      <ScrollSection />
+      {/* <ScrollSection /> */}
     </main>
   );
 }
