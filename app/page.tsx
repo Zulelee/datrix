@@ -17,7 +17,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen">
-      <LoadingScreen onComplete={() => {}} />
+      <LoadingScreen onComplete={() => {}} showWelcome={true} />
     </main>
   );
 }

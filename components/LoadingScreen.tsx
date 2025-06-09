@@ -7,9 +7,10 @@ import Hero from './Hero';
 
 interface LoadingScreenProps {
   onComplete: () => void;
+  showWelcome?: boolean; // New prop to control welcome animation
 }
 
-export default function LoadingScreen({ onComplete }: LoadingScreenProps) {
+export default function LoadingScreen({ onComplete, showWelcome = false }: LoadingScreenProps) {
   const [showTypewriter, setShowTypewriter] = useState(false);
   const [typewriterText, setTypewriterText] = useState('');
   const [showHero, setShowHero] = useState(false);
@@ -44,6 +45,57 @@ export default function LoadingScreen({ onComplete }: LoadingScreenProps) {
     return () => clearInterval(typeInterval);
   }, [showTypewriter]);
 
+  // For non-welcome pages, show simple loading for 2 seconds
+  useEffect(() => {
+    if (!showWelcome) {
+      const timer = setTimeout(() => {
+        onComplete();
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [showWelcome, onComplete]);
+
+  // Simple circular loading animation for other pages
+  if (!showWelcome) {
+    return (
+      <motion.div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-[#f9efe8] via-[#f5e6d3] to-[#f0dcc4]"
+        initial={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.5, ease: "easeInOut" }}
+      >
+        {/* Circular Loading Animation */}
+        <div className="relative">
+          <motion.div
+            className="w-16 h-16 border-4 border-[#6e1d27]/20 rounded-full"
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          />
+          <motion.div
+            className="absolute inset-0 w-16 h-16 border-4 border-transparent border-t-[#6e1d27] rounded-full"
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          />
+        </div>
+
+        {/* Optional loading text */}
+        <motion.p
+          className="absolute mt-24 text-[#6e1d27] font-ibm-plex font-medium"
+          animate={{ opacity: [0.5, 1, 0.5] }}
+          transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+        >
+          Loading...
+        </motion.p>
+
+        {/* Subtle background pattern */}
+        <div className="absolute inset-0 opacity-5">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,_#6e1d27_1px,_transparent_1px)] bg-[length:40px_40px]" />
+        </div>
+      </motion.div>
+    );
+  }
+
+  // Welcome animation for landing page
   return (
     <>
       <AnimatePresence>
