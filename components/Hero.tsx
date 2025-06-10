@@ -9,6 +9,7 @@ import Navbar from './Navbar';
 import TypewriterText from './TypewriterText';
 import { useRouter } from 'next/navigation';
 import { motion, useScroll, useTransform } from 'framer-motion';
+import Image from 'next/image';
 
 export default function Hero() {
   const router = useRouter();
@@ -49,6 +50,28 @@ export default function Hero() {
             }}
           >
             <FloatingIcons />
+          </motion.div>
+        </div>
+
+        {/* Logo in Bottom Right Corner */}
+        <div className="absolute bottom-6 right-6 z-20">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 2, duration: 0.8, ease: "easeOut" }}
+            className="relative"
+          >
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white/80 backdrop-blur-sm border-2 border-[#6e1d27]/20 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 p-2">
+              <Image
+                src="/white_circle_360x360.png"
+                alt="Bolt Logo"
+                width={80}
+                height={80}
+                className="w-full h-full object-contain rounded-full"
+              />
+            </div>
+            {/* Subtle glow effect */}
+            <div className="absolute inset-0 rounded-full bg-[#6e1d27]/5 blur-xl scale-150 -z-10" />
           </motion.div>
         </div>
 
