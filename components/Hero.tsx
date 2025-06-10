@@ -8,10 +8,16 @@ import FloatingIcons from './FloatingIcons';
 import Navbar from './Navbar';
 import TypewriterText from './TypewriterText';
 import { useRouter } from 'next/navigation';
+import { motion, useScroll, useTransform } from 'framer-motion';
 
 export default function Hero() {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
+  const { scrollY } = useScroll();
+  
+  // Transform for content fade out (text, buttons, icons)
+  const contentOpacity = useTransform(scrollY, [0, 400], [1, 0]);
+  const contentY = useTransform(scrollY, [0, 400], [0, -50]);
 
   useEffect(() => {
     setMounted(true);
@@ -25,7 +31,7 @@ export default function Hero() {
     <>
       <Navbar />
       <section className="relative min-h-screen bg-gradient-to-br from-[#f9efe8] via-[#f5e6d3] to-[#f0dcc4] overflow-hidden">
-        {/* Background Animation Layer */}
+        {/* Background Animation Layer - ALWAYS VISIBLE */}
         <div className="absolute inset-0 z-0">
           <FlickeringGrid
             className="absolute inset-0 size-full"
@@ -35,11 +41,25 @@ export default function Hero() {
             maxOpacity={0.15}
             flickerChance={0.08}
           />
-          <FloatingIcons />
+          {/* Floating Icons with fade out */}
+          <motion.div
+            style={{ 
+              opacity: contentOpacity,
+              y: contentY
+            }}
+          >
+            <FloatingIcons />
+          </motion.div>
         </div>
 
-        {/* Foreground Content - Perfectly Centered */}
-        <div className="relative z-10 flex items-center justify-center min-h-screen px-4 sm:px-6 lg:px-8">
+        {/* Foreground Content - Fades out on scroll */}
+        <motion.div 
+          className="relative z-10 flex items-center justify-center min-h-screen px-4 sm:px-6 lg:px-8"
+          style={{ 
+            opacity: contentOpacity,
+            y: contentY
+          }}
+        >
           <div className="text-center max-w-5xl mx-auto">
             {/* Main Headline with Typewriter Effect - IBM Plex Sans Bold - ALL CAPS */}
             <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#3d0e15] mb-8 animate-fade-in-up font-ibm-plex leading-tight tracking-tight">
@@ -76,9 +96,9 @@ export default function Hero() {
               </Button>
             </div>
           </div>
-        </div>
+        </motion.div>
 
-        {/* Gradient Overlay for Depth */}
+        {/* Gradient Overlay for Depth - ALWAYS VISIBLE */}
         <div className="absolute inset-0 bg-gradient-to-t from-[#f9efe8]/20 via-transparent to-transparent pointer-events-none" />
       </section>
     </>
