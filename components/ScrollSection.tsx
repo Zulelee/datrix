@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { Mail, FileText, FileSpreadsheet, File, Database, BarChart3, PieChart, TrendingUp, Doughnut, AreaChart } from 'lucide-react';
+import { Mail, FileText, FileSpreadsheet, File, Database, BarChart3, PieChart, TrendingUp, Donut as Doughnut, AreaChart } from 'lucide-react';
 import Image from 'next/image';
 
 export default function ScrollSection() {
