@@ -3,10 +3,11 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
-
+  const router = useRouter();
   useEffect(() => {
     const handleScroll = () => {
       const isScrolled = window.scrollY > 20;
@@ -43,6 +44,9 @@ export default function Navbar() {
 
           {/* Try Now Button */}
           <Button 
+            onClick={() => {
+              router.push('/auth');
+            }}
             className="bg-[#6e1d27] hover:bg-[#912d3c] text-[#f9efe8] px-6 py-2 font-semibold rounded-full shadow-lg shadow-[#b6454e]/20 hover:shadow-xl hover-[#b6454e]/30 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm border border-[#6e1d27]/10 font-ibm-plex tracking-wide"
           >
             Try Now

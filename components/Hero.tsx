@@ -7,8 +7,10 @@ import { FlickeringGrid } from '@/components/ui/flickering-grid';
 import FloatingIcons from './FloatingIcons';
 import Navbar from './Navbar';
 import TypewriterText from './TypewriterText';
+import { useRouter } from 'next/navigation';
 
 export default function Hero() {
+  const router = useRouter();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -56,6 +58,9 @@ export default function Hero() {
             {/* CTA Buttons - IBM Plex Sans */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-fade-in-up animation-delay-600">
               <Button 
+              onClick={() => {
+                router.push('/auth'); // Redirect to home
+              }}
                 size="lg" 
                 className="bg-[#6e1d27] hover:bg-[#912d3c] text-[#f9efe8] px-8 py-4 text-lg font-semibold rounded-full shadow-lg shadow-[#b6454e]/30 hover:shadow-xl hover:shadow-[#b6454e]/40 transform hover:scale-105 transition-all duration-300 font-ibm-plex tracking-wide"
               >
