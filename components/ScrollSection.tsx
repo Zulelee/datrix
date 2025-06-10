@@ -69,7 +69,7 @@ export default function ScrollSection() {
 
         const x = start.x + (end.x - start.x) * easeProgress;
         const y = start.y + (end.y - start.y) * easeProgress;
-        const scale = 1 - (easeProgress * 0.4); // Shrink as they move in
+        const scale = 1 - (easeProgress * 0.3); // Less shrinking for bigger final icons
 
         return {
           x,
@@ -116,8 +116,8 @@ export default function ScrollSection() {
 
               {/* Box Animation - Mobile */}
               <div className="flex items-center justify-center">
-                <div className="relative w-72 h-72 sm:w-80 sm:h-80">
-                  {/* Beautiful Clean Box SVG */}
+                <div className="relative w-64 h-64 sm:w-72 sm:h-72">
+                  {/* Beautiful Clean Box SVG - Smaller & Thinner */}
                   <motion.svg
                     className="absolute inset-0 w-full h-full"
                     viewBox="0 0 24 24"
@@ -129,7 +129,7 @@ export default function ScrollSection() {
                       d="M20.73 16.52C20.73 16.52 20.73 16.45 20.73 16.41V7.58999C20.7297 7.47524 20.7022 7.36218 20.65 7.25999C20.5764 7.10119 20.4488 6.97364 20.29 6.89999L12.29 3.31999C12.1926 3.2758 12.0869 3.25293 11.98 3.25293C11.8731 3.25293 11.7674 3.2758 11.67 3.31999L3.67001 6.89999C3.54135 6.96474 3.43255 7.06303 3.35511 7.18448C3.27766 7.30592 3.23444 7.44603 3.23001 7.58999V16.41C3.23749 16.5532 3.28195 16.6921 3.35906 16.813C3.43617 16.9339 3.54331 17.0328 3.67001 17.1L11.67 20.68C11.7668 20.7262 11.8727 20.7501 11.98 20.7501C12.0873 20.7501 12.1932 20.7262 12.29 20.68L20.29 17.1C20.4055 17.0471 20.5061 16.9665 20.5829 16.8653C20.6597 16.7641 20.7102 16.6455 20.73 16.52ZM4.73001 8.73999L11.23 11.66V18.84L4.73001 15.93V8.73999ZM12.73 11.66L19.23 8.73999V15.93L12.73 18.84V11.66ZM12 4.81999L18.17 7.58999L12 10.35L5.83001 7.58999L12 4.81999Z"
                       fill="none"
                       stroke="#6e1d27"
-                      strokeWidth="1.2"
+                      strokeWidth="0.8"
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       initial={{ pathLength: 0 }}
@@ -141,7 +141,7 @@ export default function ScrollSection() {
                     />
                   </motion.svg>
 
-                  {/* Floating Icons */}
+                  {/* Floating Icons - Bigger */}
                   <div className="absolute inset-0 flex items-center justify-center">
                     {icons.map((icon, index) => {
                       const animation = iconAnimations[index];
@@ -162,9 +162,9 @@ export default function ScrollSection() {
                             delay: animation.delay
                           }}
                         >
-                          <div className="p-2 sm:p-3 rounded-full bg-[#6e1d27]/10 backdrop-blur-sm border border-[#6e1d27]/20 shadow-lg">
+                          <div className="p-3 rounded-full bg-[#6e1d27]/10 backdrop-blur-sm border border-[#6e1d27]/20 shadow-lg">
                             <icon.Icon 
-                              size={20} 
+                              size={26} 
                               className="text-[#6e1d27] drop-shadow-lg" 
                             />
                           </div>
@@ -196,10 +196,10 @@ export default function ScrollSection() {
               </p>
             </motion.div>
 
-            {/* Right Side - Box Animation */}
+            {/* Right Side - Box Animation - Smaller & Better Proportioned */}
             <div className="flex items-center justify-center">
-              <div className="relative w-96 h-96 xl:w-[450px] xl:h-[450px]">
-                {/* Beautiful Clean Box SVG */}
+              <div className="relative w-80 h-80 xl:w-96 xl:h-96">
+                {/* Beautiful Clean Box SVG - Thinner Outline */}
                 <motion.svg
                   className="absolute inset-0 w-full h-full"
                   viewBox="0 0 24 24"
@@ -211,7 +211,7 @@ export default function ScrollSection() {
                     d="M20.73 16.52C20.73 16.52 20.73 16.45 20.73 16.41V7.58999C20.7297 7.47524 20.7022 7.36218 20.65 7.25999C20.5764 7.10119 20.4488 6.97364 20.29 6.89999L12.29 3.31999C12.1926 3.2758 12.0869 3.25293 11.98 3.25293C11.8731 3.25293 11.7674 3.2758 11.67 3.31999L3.67001 6.89999C3.54135 6.96474 3.43255 7.06303 3.35511 7.18448C3.27766 7.30592 3.23444 7.44603 3.23001 7.58999V16.41C3.23749 16.5532 3.28195 16.6921 3.35906 16.813C3.43617 16.9339 3.54331 17.0328 3.67001 17.1L11.67 20.68C11.7668 20.7262 11.8727 20.7501 11.98 20.7501C12.0873 20.7501 12.1932 20.7262 12.29 20.68L20.29 17.1C20.4055 17.0471 20.5061 16.9665 20.5829 16.8653C20.6597 16.7641 20.7102 16.6455 20.73 16.52ZM4.73001 8.73999L11.23 11.66V18.84L4.73001 15.93V8.73999ZM12.73 11.66L19.23 8.73999V15.93L12.73 18.84V11.66ZM12 4.81999L18.17 7.58999L12 10.35L5.83001 7.58999L12 4.81999Z"
                     fill="none"
                     stroke="#6e1d27"
-                    strokeWidth="1"
+                    strokeWidth="0.7"
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     initial={{ pathLength: 0 }}
@@ -223,7 +223,7 @@ export default function ScrollSection() {
                   />
                 </motion.svg>
 
-                {/* Floating Icons */}
+                {/* Floating Icons - Bigger */}
                 <div className="absolute inset-0 flex items-center justify-center">
                   {icons.map((icon, index) => {
                     const animation = iconAnimations[index];
@@ -246,7 +246,7 @@ export default function ScrollSection() {
                       >
                         <div className="p-3 rounded-full bg-[#6e1d27]/10 backdrop-blur-sm border border-[#6e1d27]/20 shadow-lg">
                           <icon.Icon 
-                            size={28} 
+                            size={32} 
                             className="text-[#6e1d27] drop-shadow-lg" 
                           />
                         </div>
