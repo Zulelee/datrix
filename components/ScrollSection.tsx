@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { Mail, FileText, FileSpreadsheet, File, Database } from 'lucide-react';
+import { FlickeringGrid } from '@/components/ui/flickering-grid';
 
 export default function ScrollSection() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -69,7 +70,7 @@ export default function ScrollSection() {
 
         const x = start.x + (end.x - start.x) * easeProgress;
         const y = start.y + (end.y - start.y) * easeProgress;
-        const scale = 1 - (easeProgress * 0.3); // Less shrinking for bigger final icons
+        const scale = 1 - (easeProgress * 0.2); // Even less shrinking for bigger final icons
 
         return {
           x,
@@ -89,6 +90,18 @@ export default function ScrollSection() {
       ref={containerRef}
       className="relative min-h-screen bg-gradient-to-br from-[#f9efe8] via-[#f5e6d3] to-[#f0dcc4] overflow-hidden"
     >
+      {/* Background Animation Layer - Same as Hero */}
+      <div className="absolute inset-0 z-0">
+        <FlickeringGrid
+          className="absolute inset-0 size-full"
+          squareSize={3}
+          gridGap={8}
+          color="#6e1d27"
+          maxOpacity={0.15}
+          flickerChance={0.08}
+        />
+      </div>
+
       <motion.div 
         className="relative z-10 flex items-center justify-center min-h-screen px-4 sm:px-6 lg:px-8"
         style={{ opacity }}
@@ -117,7 +130,7 @@ export default function ScrollSection() {
               {/* Box Animation - Mobile */}
               <div className="flex items-center justify-center">
                 <div className="relative w-64 h-64 sm:w-72 sm:h-72">
-                  {/* Beautiful Clean Box SVG - Smaller & Thinner */}
+                  {/* Ultra-Thin Box SVG */}
                   <motion.svg
                     className="absolute inset-0 w-full h-full"
                     viewBox="0 0 24 24"
@@ -129,7 +142,7 @@ export default function ScrollSection() {
                       d="M20.73 16.52C20.73 16.52 20.73 16.45 20.73 16.41V7.58999C20.7297 7.47524 20.7022 7.36218 20.65 7.25999C20.5764 7.10119 20.4488 6.97364 20.29 6.89999L12.29 3.31999C12.1926 3.2758 12.0869 3.25293 11.98 3.25293C11.8731 3.25293 11.7674 3.2758 11.67 3.31999L3.67001 6.89999C3.54135 6.96474 3.43255 7.06303 3.35511 7.18448C3.27766 7.30592 3.23444 7.44603 3.23001 7.58999V16.41C3.23749 16.5532 3.28195 16.6921 3.35906 16.813C3.43617 16.9339 3.54331 17.0328 3.67001 17.1L11.67 20.68C11.7668 20.7262 11.8727 20.7501 11.98 20.7501C12.0873 20.7501 12.1932 20.7262 12.29 20.68L20.29 17.1C20.4055 17.0471 20.5061 16.9665 20.5829 16.8653C20.6597 16.7641 20.7102 16.6455 20.73 16.52ZM4.73001 8.73999L11.23 11.66V18.84L4.73001 15.93V8.73999ZM12.73 11.66L19.23 8.73999V15.93L12.73 18.84V11.66ZM12 4.81999L18.17 7.58999L12 10.35L5.83001 7.58999L12 4.81999Z"
                       fill="none"
                       stroke="#6e1d27"
-                      strokeWidth="0.8"
+                      strokeWidth="0.5"
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       initial={{ pathLength: 0 }}
@@ -164,7 +177,7 @@ export default function ScrollSection() {
                         >
                           <div className="p-3 rounded-full bg-[#6e1d27]/10 backdrop-blur-sm border border-[#6e1d27]/20 shadow-lg">
                             <icon.Icon 
-                              size={26} 
+                              size={30} 
                               className="text-[#6e1d27] drop-shadow-lg" 
                             />
                           </div>
@@ -196,10 +209,10 @@ export default function ScrollSection() {
               </p>
             </motion.div>
 
-            {/* Right Side - Box Animation - Smaller & Better Proportioned */}
+            {/* Right Side - Box Animation */}
             <div className="flex items-center justify-center">
               <div className="relative w-80 h-80 xl:w-96 xl:h-96">
-                {/* Beautiful Clean Box SVG - Thinner Outline */}
+                {/* Ultra-Thin Box SVG */}
                 <motion.svg
                   className="absolute inset-0 w-full h-full"
                   viewBox="0 0 24 24"
@@ -211,7 +224,7 @@ export default function ScrollSection() {
                     d="M20.73 16.52C20.73 16.52 20.73 16.45 20.73 16.41V7.58999C20.7297 7.47524 20.7022 7.36218 20.65 7.25999C20.5764 7.10119 20.4488 6.97364 20.29 6.89999L12.29 3.31999C12.1926 3.2758 12.0869 3.25293 11.98 3.25293C11.8731 3.25293 11.7674 3.2758 11.67 3.31999L3.67001 6.89999C3.54135 6.96474 3.43255 7.06303 3.35511 7.18448C3.27766 7.30592 3.23444 7.44603 3.23001 7.58999V16.41C3.23749 16.5532 3.28195 16.6921 3.35906 16.813C3.43617 16.9339 3.54331 17.0328 3.67001 17.1L11.67 20.68C11.7668 20.7262 11.8727 20.7501 11.98 20.7501C12.0873 20.7501 12.1932 20.7262 12.29 20.68L20.29 17.1C20.4055 17.0471 20.5061 16.9665 20.5829 16.8653C20.6597 16.7641 20.7102 16.6455 20.73 16.52ZM4.73001 8.73999L11.23 11.66V18.84L4.73001 15.93V8.73999ZM12.73 11.66L19.23 8.73999V15.93L12.73 18.84V11.66ZM12 4.81999L18.17 7.58999L12 10.35L5.83001 7.58999L12 4.81999Z"
                     fill="none"
                     stroke="#6e1d27"
-                    strokeWidth="0.7"
+                    strokeWidth="0.4"
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     initial={{ pathLength: 0 }}
@@ -246,7 +259,7 @@ export default function ScrollSection() {
                       >
                         <div className="p-3 rounded-full bg-[#6e1d27]/10 backdrop-blur-sm border border-[#6e1d27]/20 shadow-lg">
                           <icon.Icon 
-                            size={32} 
+                            size={36} 
                             className="text-[#6e1d27] drop-shadow-lg" 
                           />
                         </div>
@@ -260,10 +273,8 @@ export default function ScrollSection() {
         </div>
       </motion.div>
 
-      {/* Background pattern */}
-      <div className="absolute inset-0 opacity-5 pointer-events-none">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,_#6e1d27_1px,_transparent_1px)] bg-[length:40px_40px]" />
-      </div>
+      {/* Gradient Overlay for Depth - Same as Hero */}
+      <div className="absolute inset-0 bg-gradient-to-t from-[#f9efe8]/20 via-transparent to-transparent pointer-events-none" />
     </section>
   );
 }
