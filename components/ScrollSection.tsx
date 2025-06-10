@@ -3,7 +3,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { Mail, FileText, FileSpreadsheet, File, Database } from 'lucide-react';
-import { FlickeringGrid } from '@/components/ui/flickering-grid';
 
 export default function ScrollSection() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -105,20 +104,8 @@ export default function ScrollSection() {
       {/* First Section - Collect from anywhere */}
       <section 
         ref={containerRef}
-        className="relative min-h-screen bg-gradient-to-br from-[#f9efe8] via-[#f5e6d3] to-[#f0dcc4] overflow-hidden"
+        className="relative min-h-screen overflow-hidden"
       >
-        {/* Background Animation Layer - Same as Hero */}
-        <div className="absolute inset-0 z-0">
-          <FlickeringGrid
-            className="absolute inset-0 size-full"
-            squareSize={3}
-            gridGap={8}
-            color="#6e1d27"
-            maxOpacity={0.15}
-            flickerChance={0.08}
-          />
-        </div>
-
         <motion.div 
           className="relative z-10 flex items-center justify-center min-h-screen px-4 sm:px-6 lg:px-8"
           style={{ opacity }}
@@ -289,28 +276,13 @@ export default function ScrollSection() {
             </div>
           </div>
         </motion.div>
-
-        {/* Gradient Overlay for Depth - Same as Hero */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#f9efe8]/20 via-transparent to-transparent pointer-events-none" />
       </section>
 
       {/* Second Section - CRM/Database Table */}
       <section 
         ref={crmSectionRef}
-        className="relative min-h-screen bg-gradient-to-br from-[#f9efe8] via-[#f5e6d3] to-[#f0dcc4] overflow-hidden"
+        className="relative min-h-screen overflow-hidden"
       >
-        {/* Background Animation Layer - Same as Hero */}
-        <div className="absolute inset-0 z-0">
-          <FlickeringGrid
-            className="absolute inset-0 size-full"
-            squareSize={3}
-            gridGap={8}
-            color="#6e1d27"
-            maxOpacity={0.15}
-            flickerChance={0.08}
-          />
-        </div>
-
         <motion.div 
           className="relative z-10 flex items-center justify-center min-h-screen px-4 sm:px-6 lg:px-8"
           style={{ opacity: crmOpacity }}
@@ -733,9 +705,6 @@ export default function ScrollSection() {
             </div>
           </div>
         </motion.div>
-
-        {/* Gradient Overlay for Depth - Same as Hero */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#f9efe8]/20 via-transparent to-transparent pointer-events-none" />
       </section>
     </>
   );

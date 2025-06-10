@@ -3,13 +3,11 @@
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Play } from 'lucide-react';
-import { FlickeringGrid } from '@/components/ui/flickering-grid';
 import FloatingIcons from './FloatingIcons';
 import Navbar from './Navbar';
 import TypewriterText from './TypewriterText';
 import { useRouter } from 'next/navigation';
 import { motion, useScroll, useTransform } from 'framer-motion';
-import Image from 'next/image';
 
 export default function Hero() {
   const router = useRouter();
@@ -31,49 +29,17 @@ export default function Hero() {
   return (
     <>
       <Navbar />
-      <section className="relative min-h-screen bg-gradient-to-br from-[#f9efe8] via-[#f5e6d3] to-[#f0dcc4] overflow-hidden">
-        {/* Background Animation Layer - ALWAYS VISIBLE */}
-        <div className="absolute inset-0 z-0">
-          <FlickeringGrid
-            className="absolute inset-0 size-full"
-            squareSize={3}
-            gridGap={8}
-            color="#6e1d27"
-            maxOpacity={0.15}
-            flickerChance={0.08}
-          />
-          {/* Floating Icons with fade out */}
-          <motion.div
-            style={{ 
-              opacity: contentOpacity,
-              y: contentY
-            }}
-          >
-            <FloatingIcons />
-          </motion.div>
-        </div>
-
-        {/* Logo in Bottom Right Corner */}
-        <div className="absolute bottom-6 right-6 z-20">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 2, duration: 0.8, ease: "easeOut" }}
-            className="relative"
-          >
-            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white/80 backdrop-blur-sm border-2 border-[#6e1d27]/20 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 p-2">
-              <Image
-                src="/white_circle_360x360.png"
-                alt="Bolt Logo"
-                width={80}
-                height={80}
-                className="w-full h-full object-contain rounded-full"
-              />
-            </div>
-            {/* Subtle glow effect */}
-            <div className="absolute inset-0 rounded-full bg-[#6e1d27]/5 blur-xl scale-150 -z-10" />
-          </motion.div>
-        </div>
+      <section className="relative min-h-screen overflow-hidden">
+        {/* Floating Icons with fade out */}
+        <motion.div
+          className="absolute inset-0 z-0"
+          style={{ 
+            opacity: contentOpacity,
+            y: contentY
+          }}
+        >
+          <FloatingIcons />
+        </motion.div>
 
         {/* Foreground Content - Fades out on scroll */}
         <motion.div 
@@ -120,9 +86,6 @@ export default function Hero() {
             </div>
           </div>
         </motion.div>
-
-        {/* Gradient Overlay for Depth - ALWAYS VISIBLE */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#f9efe8]/20 via-transparent to-transparent pointer-events-none" />
       </section>
     </>
   );
