@@ -27,10 +27,10 @@ export default function ScrollSection() {
   const textOpacity = useTransform(scrollYProgress, [0.3, 0.6], [0, 1]);
   const textY = useTransform(scrollYProgress, [0.3, 0.6], [50, 0]);
 
-  // Transform values for CRM section
+  // Transform values for CRM section - WITH FADE OUT!
   const crmOpacity = useTransform(crmScrollProgress, [0, 0.3, 0.7, 1], [0, 1, 1, 0]);
   const crmTableProgress = useTransform(crmScrollProgress, [0.2, 0.8], [0, 1]);
-  const crmTextOpacity = useTransform(crmScrollProgress, [0.3, 0.6], [0, 1]);
+  const crmTextOpacity = useTransform(crmScrollProgress, [0.3, 0.6, 0.8, 1], [0, 1, 1, 0]);
   const crmTextY = useTransform(crmScrollProgress, [0.3, 0.6], [50, 0]);
 
   // Icons data
