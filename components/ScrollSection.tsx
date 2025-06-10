@@ -7,6 +7,7 @@ import { Mail, FileText, FileSpreadsheet, File, Database } from 'lucide-react';
 export default function ScrollSection() {
   const containerRef = useRef<HTMLDivElement>(null);
   const crmSectionRef = useRef<HTMLDivElement>(null);
+  const insightsSectionRef = useRef<HTMLDivElement>(null);
   
   // First section scroll progress
   const { scrollYProgress } = useScroll({
@@ -17,6 +18,12 @@ export default function ScrollSection() {
   // CRM section scroll progress
   const { scrollYProgress: crmScrollProgress } = useScroll({
     target: crmSectionRef,
+    offset: ["start end", "end start"]
+  });
+
+  // Insights section scroll progress
+  const { scrollYProgress: insightsScrollProgress } = useScroll({
+    target: insightsSectionRef,
     offset: ["start end", "end start"]
   });
 
@@ -31,6 +38,12 @@ export default function ScrollSection() {
   const crmTableProgress = useTransform(crmScrollProgress, [0.2, 0.8], [0, 1]);
   const crmTextOpacity = useTransform(crmScrollProgress, [0.3, 0.6, 0.8, 1], [0, 1, 1, 0]);
   const crmTextY = useTransform(crmScrollProgress, [0.3, 0.6], [50, 0]);
+
+  // Transform values for Insights section - WITH FADE OUT!
+  const insightsOpacity = useTransform(insightsScrollProgress, [0, 0.3, 0.7, 1], [0, 1, 1, 0]);
+  const insightsBoardProgress = useTransform(insightsScrollProgress, [0.2, 0.8], [0, 1]);
+  const insightsTextOpacity = useTransform(insightsScrollProgress, [0.3, 0.6, 0.8, 1], [0, 1, 1, 0]);
+  const insightsTextY = useTransform(insightsScrollProgress, [0.3, 0.6], [50, 0]);
 
   // Icons data
   const icons = [
@@ -702,6 +715,336 @@ export default function ScrollSection() {
                   Datrix organizes raw inputs into smart, editable tables — ready for your CRM or database.
                 </p>
               </motion.div>
+            </div>
+          </div>
+        </motion.div>
+      </section>
+
+      {/* Third Section - Insights Board with Sticky Note Charts */}
+      <section 
+        ref={insightsSectionRef}
+        className="relative min-h-screen overflow-hidden"
+      >
+        <motion.div 
+          className="relative z-10 flex items-center justify-center min-h-screen px-4 sm:px-6 lg:px-8"
+          style={{ opacity: insightsOpacity }}
+        >
+          <div className="w-full max-w-7xl mx-auto">
+            
+            {/* Mobile Layout - Stacked */}
+            <div className="block lg:hidden">
+              <div className="text-center space-y-8">
+                {/* Text Content - Mobile */}
+                <motion.div 
+                  className="space-y-6"
+                  style={{ 
+                    opacity: insightsTextOpacity,
+                    y: insightsTextY
+                  }}
+                >
+                  <h2 className="text-3xl sm:text-4xl font-bold text-[#3d0e15] font-ibm-plex leading-tight">
+                    From data to decisions.
+                  </h2>
+                  <p className="text-lg sm:text-xl text-[#6e1d27] font-ibm-plex leading-relaxed max-w-2xl mx-auto">
+                    Turn tables into insight boards. Generate charts with a prompt. Move, resize, and organize like sticky notes.
+                  </p>
+                </motion.div>
+
+                {/* Insights Board Animation - Mobile */}
+                <div className="flex items-center justify-center">
+                  <div className="relative w-80 h-64 sm:w-96 sm:h-72">
+                    <motion.svg
+                      className="absolute inset-0 w-full h-full"
+                      viewBox="0 0 400 300"
+                      style={{ 
+                        filter: 'drop-shadow(3px 3px 8px rgba(110, 29, 39, 0.15))'
+                      }}
+                    >
+                      {/* Board Background */}
+                      <motion.rect
+                        x="10"
+                        y="20"
+                        width="380"
+                        height="260"
+                        fill="none"
+                        stroke="#6e1d27"
+                        strokeWidth="1.5"
+                        rx="12"
+                        initial={{ pathLength: 0 }}
+                        animate={{ pathLength: insightsBoardProgress }}
+                        transition={{ duration: 1, ease: "easeInOut" }}
+                      />
+
+                      {/* Sticky Note 1 - Bar Chart */}
+                      <motion.g
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ 
+                          opacity: insightsBoardProgress,
+                          scale: insightsBoardProgress > 0.3 ? 1 : 0.8
+                        }}
+                        transition={{ duration: 0.6, delay: 0.5 }}
+                      >
+                        <rect x="30" y="40" width="80" height="70" fill="#f9efe8" stroke="#6e1d27" strokeWidth="1" rx="6" transform="rotate(-2 70 75)" />
+                        {/* Bar chart bars */}
+                        <rect x="40" y="85" width="8" height="15" fill="#6e1d27" transform="rotate(-2 44 92.5)" />
+                        <rect x="52" y="80" width="8" height="20" fill="#6e1d27" transform="rotate(-2 56 90)" />
+                        <rect x="64" y="75" width="8" height="25" fill="#6e1d27" transform="rotate(-2 68 87.5)" />
+                        <rect x="76" y="70" width="8" height="30" fill="#6e1d27" transform="rotate(-2 80 85)" />
+                        <rect x="88" y="85" width="8" height="15" fill="#6e1d27" transform="rotate(-2 92 92.5)" />
+                      </motion.g>
+
+                      {/* Sticky Note 2 - Pie Chart */}
+                      <motion.g
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ 
+                          opacity: insightsBoardProgress,
+                          scale: insightsBoardProgress > 0.4 ? 1 : 0.8
+                        }}
+                        transition={{ duration: 0.6, delay: 0.7 }}
+                      >
+                        <rect x="280" y="35" width="80" height="70" fill="#f9efe8" stroke="#6e1d27" strokeWidth="1" rx="6" transform="rotate(3 320 70)" />
+                        {/* Pie chart circle */}
+                        <circle cx="320" cy="70" r="20" fill="none" stroke="#6e1d27" strokeWidth="1.5" transform="rotate(3 320 70)" />
+                        {/* Pie chart segments */}
+                        <path d="M 320 50 A 20 20 0 0 1 340 70 L 320 70 Z" fill="#6e1d27" opacity="0.7" transform="rotate(3 320 70)" />
+                        <path d="M 340 70 A 20 20 0 0 1 320 90 L 320 70 Z" fill="#6e1d27" opacity="0.5" transform="rotate(3 320 70)" />
+                        <path d="M 320 90 A 20 20 0 0 1 300 70 L 320 70 Z" fill="#6e1d27" opacity="0.3" transform="rotate(3 320 70)" />
+                      </motion.g>
+
+                      {/* Sticky Note 3 - Line Chart */}
+                      <motion.g
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ 
+                          opacity: insightsBoardProgress,
+                          scale: insightsBoardProgress > 0.5 ? 1 : 0.8
+                        }}
+                        transition={{ duration: 0.6, delay: 0.9 }}
+                      >
+                        <rect x="25" y="140" width="90" height="80" fill="#f9efe8" stroke="#6e1d27" strokeWidth="1" rx="6" transform="rotate(-1 70 180)" />
+                        {/* Line chart */}
+                        <polyline 
+                          points="35,200 45,185 55,190 65,175 75,180 85,165 95,170 105,155" 
+                          fill="none" 
+                          stroke="#6e1d27" 
+                          strokeWidth="2" 
+                          transform="rotate(-1 70 180)"
+                        />
+                        {/* Data points */}
+                        <circle cx="35" cy="200" r="2" fill="#6e1d27" transform="rotate(-1 70 180)" />
+                        <circle cx="45" cy="185" r="2" fill="#6e1d27" transform="rotate(-1 70 180)" />
+                        <circle cx="55" cy="190" r="2" fill="#6e1d27" transform="rotate(-1 70 180)" />
+                        <circle cx="65" cy="175" r="2" fill="#6e1d27" transform="rotate(-1 70 180)" />
+                        <circle cx="75" cy="180" r="2" fill="#6e1d27" transform="rotate(-1 70 180)" />
+                        <circle cx="85" cy="165" r="2" fill="#6e1d27" transform="rotate(-1 70 180)" />
+                        <circle cx="95" cy="170" r="2" fill="#6e1d27" transform="rotate(-1 70 180)" />
+                        <circle cx="105" cy="155" r="2" fill="#6e1d27" transform="rotate(-1 70 180)" />
+                      </motion.g>
+
+                      {/* Sticky Note 4 - Donut Chart */}
+                      <motion.g
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ 
+                          opacity: insightsBoardProgress,
+                          scale: insightsBoardProgress > 0.6 ? 1 : 0.8
+                        }}
+                        transition={{ duration: 0.6, delay: 1.1 }}
+                      >
+                        <rect x="270" y="150" width="80" height="70" fill="#f9efe8" stroke="#6e1d27" strokeWidth="1" rx="6" transform="rotate(2 310 185)" />
+                        {/* Donut chart outer circle */}
+                        <circle cx="310" cy="185" r="18" fill="none" stroke="#6e1d27" strokeWidth="1.5" transform="rotate(2 310 185)" />
+                        {/* Donut chart inner circle */}
+                        <circle cx="310" cy="185" r="10" fill="#f9efe8" stroke="#6e1d27" strokeWidth="1" transform="rotate(2 310 185)" />
+                        {/* Donut segments */}
+                        <path d="M 310 167 A 18 18 0 0 1 328 185 L 320 185 A 10 10 0 0 0 310 177 Z" fill="#6e1d27" opacity="0.7" transform="rotate(2 310 185)" />
+                        <path d="M 328 185 A 18 18 0 0 1 310 203 L 310 195 A 10 10 0 0 0 320 185 Z" fill="#6e1d27" opacity="0.5" transform="rotate(2 310 185)" />
+                      </motion.g>
+
+                      {/* Sticky Note 5 - Area Chart */}
+                      <motion.g
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ 
+                          opacity: insightsBoardProgress,
+                          scale: insightsBoardProgress > 0.7 ? 1 : 0.8
+                        }}
+                        transition={{ duration: 0.6, delay: 1.3 }}
+                      >
+                        <rect x="150" y="120" width="90" height="80" fill="#f9efe8" stroke="#6e1d27" strokeWidth="1" rx="6" transform="rotate(1 195 160)" />
+                        {/* Area chart */}
+                        <path 
+                          d="M 160 180 L 170 165 L 180 170 L 190 155 L 200 160 L 210 145 L 220 150 L 230 135 L 230 180 Z" 
+                          fill="#6e1d27" 
+                          opacity="0.3" 
+                          transform="rotate(1 195 160)"
+                        />
+                        <polyline 
+                          points="160,180 170,165 180,170 190,155 200,160 210,145 220,150 230,135" 
+                          fill="none" 
+                          stroke="#6e1d27" 
+                          strokeWidth="2" 
+                          transform="rotate(1 195 160)"
+                        />
+                      </motion.g>
+                    </motion.svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Desktop Layout - Side by Side */}
+            <div className="hidden lg:grid lg:grid-cols-2 lg:gap-16 lg:items-center">
+              
+              {/* Left Side - Text Content */}
+              <motion.div 
+                className="text-left space-y-8"
+                style={{ 
+                  opacity: insightsTextOpacity,
+                  y: insightsTextY
+                }}
+              >
+                <h2 className="text-4xl xl:text-5xl font-bold text-[#3d0e15] font-ibm-plex leading-tight">
+                  From data to decisions.
+                </h2>
+                <p className="text-xl xl:text-2xl text-[#6e1d27] font-ibm-plex leading-relaxed">
+                  Turn tables into insight boards. Generate charts with a prompt. Move, resize, and organize like sticky notes.
+                </p>
+              </motion.div>
+
+              {/* Right Side - Insights Board Animation */}
+              <div className="flex items-center justify-center">
+                <div className="relative w-96 h-80 xl:w-[500px] xl:h-96">
+                  <motion.svg
+                    className="absolute inset-0 w-full h-full"
+                    viewBox="0 0 500 400"
+                    style={{ 
+                      filter: 'drop-shadow(4px 4px 12px rgba(110, 29, 39, 0.2))'
+                    }}
+                  >
+                    {/* Board Background */}
+                    <motion.rect
+                      x="20"
+                      y="30"
+                      width="460"
+                      height="340"
+                      fill="none"
+                      stroke="#6e1d27"
+                      strokeWidth="2"
+                      rx="15"
+                      initial={{ pathLength: 0 }}
+                      animate={{ pathLength: insightsBoardProgress }}
+                      transition={{ duration: 1, ease: "easeInOut" }}
+                    />
+
+                    {/* Sticky Note 1 - Bar Chart */}
+                    <motion.g
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ 
+                        opacity: insightsBoardProgress,
+                        scale: insightsBoardProgress > 0.3 ? 1 : 0.8
+                      }}
+                      transition={{ duration: 0.6, delay: 0.5 }}
+                    >
+                      <rect x="40" y="50" width="100" height="90" fill="#f9efe8" stroke="#6e1d27" strokeWidth="1.5" rx="8" transform="rotate(-2 90 95)" />
+                      {/* Bar chart bars */}
+                      <rect x="55" y="110" width="10" height="20" fill="#6e1d27" transform="rotate(-2 60 120)" />
+                      <rect x="70" y="105" width="10" height="25" fill="#6e1d27" transform="rotate(-2 75 117.5)" />
+                      <rect x="85" y="95" width="10" height="35" fill="#6e1d27" transform="rotate(-2 90 112.5)" />
+                      <rect x="100" y="85" width="10" height="45" fill="#6e1d27" transform="rotate(-2 105 107.5)" />
+                      <rect x="115" y="100" width="10" height="30" fill="#6e1d27" transform="rotate(-2 120 115)" />
+                    </motion.g>
+
+                    {/* Sticky Note 2 - Pie Chart */}
+                    <motion.g
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ 
+                        opacity: insightsBoardProgress,
+                        scale: insightsBoardProgress > 0.4 ? 1 : 0.8
+                      }}
+                      transition={{ duration: 0.6, delay: 0.7 }}
+                    >
+                      <rect x="340" y="45" width="100" height="90" fill="#f9efe8" stroke="#6e1d27" strokeWidth="1.5" rx="8" transform="rotate(3 390 90)" />
+                      {/* Pie chart circle */}
+                      <circle cx="390" cy="90" r="25" fill="none" stroke="#6e1d27" strokeWidth="2" transform="rotate(3 390 90)" />
+                      {/* Pie chart segments */}
+                      <path d="M 390 65 A 25 25 0 0 1 415 90 L 390 90 Z" fill="#6e1d27" opacity="0.7" transform="rotate(3 390 90)" />
+                      <path d="M 415 90 A 25 25 0 0 1 390 115 L 390 90 Z" fill="#6e1d27" opacity="0.5" transform="rotate(3 390 90)" />
+                      <path d="M 390 115 A 25 25 0 0 1 365 90 L 390 90 Z" fill="#6e1d27" opacity="0.3" transform="rotate(3 390 90)" />
+                    </motion.g>
+
+                    {/* Sticky Note 3 - Line Chart */}
+                    <motion.g
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ 
+                        opacity: insightsBoardProgress,
+                        scale: insightsBoardProgress > 0.5 ? 1 : 0.8
+                      }}
+                      transition={{ duration: 0.6, delay: 0.9 }}
+                    >
+                      <rect x="35" y="180" width="110" height="100" fill="#f9efe8" stroke="#6e1d27" strokeWidth="1.5" rx="8" transform="rotate(-1 90 230)" />
+                      {/* Line chart */}
+                      <polyline 
+                        points="50,260 65,240 80,245 95,225 110,235 125,215 140,220" 
+                        fill="none" 
+                        stroke="#6e1d27" 
+                        strokeWidth="2.5" 
+                        transform="rotate(-1 90 230)"
+                      />
+                      {/* Data points */}
+                      <circle cx="50" cy="260" r="3" fill="#6e1d27" transform="rotate(-1 90 230)" />
+                      <circle cx="65" cy="240" r="3" fill="#6e1d27" transform="rotate(-1 90 230)" />
+                      <circle cx="80" cy="245" r="3" fill="#6e1d27" transform="rotate(-1 90 230)" />
+                      <circle cx="95" cy="225" r="3" fill="#6e1d27" transform="rotate(-1 90 230)" />
+                      <circle cx="110" cy="235" r="3" fill="#6e1d27" transform="rotate(-1 90 230)" />
+                      <circle cx="125" cy="215" r="3" fill="#6e1d27" transform="rotate(-1 90 230)" />
+                      <circle cx="140" cy="220" r="3" fill="#6e1d27" transform="rotate(-1 90 230)" />
+                    </motion.g>
+
+                    {/* Sticky Note 4 - Donut Chart */}
+                    <motion.g
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ 
+                        opacity: insightsBoardProgress,
+                        scale: insightsBoardProgress > 0.6 ? 1 : 0.8
+                      }}
+                      transition={{ duration: 0.6, delay: 1.1 }}
+                    >
+                      <rect x="330" y="190" width="100" height="90" fill="#f9efe8" stroke="#6e1d27" strokeWidth="1.5" rx="8" transform="rotate(2 380 235)" />
+                      {/* Donut chart outer circle */}
+                      <circle cx="380" cy="235" r="22" fill="none" stroke="#6e1d27" strokeWidth="2" transform="rotate(2 380 235)" />
+                      {/* Donut chart inner circle */}
+                      <circle cx="380" cy="235" r="12" fill="#f9efe8" stroke="#6e1d27" strokeWidth="1.5" transform="rotate(2 380 235)" />
+                      {/* Donut segments */}
+                      <path d="M 380 213 A 22 22 0 0 1 402 235 L 392 235 A 12 12 0 0 0 380 225 Z" fill="#6e1d27" opacity="0.7" transform="rotate(2 380 235)" />
+                      <path d="M 402 235 A 22 22 0 0 1 380 257 L 380 247 A 12 12 0 0 0 392 235 Z" fill="#6e1d27" opacity="0.5" transform="rotate(2 380 235)" />
+                    </motion.g>
+
+                    {/* Sticky Note 5 - Area Chart */}
+                    <motion.g
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ 
+                        opacity: insightsBoardProgress,
+                        scale: insightsBoardProgress > 0.7 ? 1 : 0.8
+                      }}
+                      transition={{ duration: 0.6, delay: 1.3 }}
+                    >
+                      <rect x="180" y="150" width="120" height="100" fill="#f9efe8" stroke="#6e1d27" strokeWidth="1.5" rx="8" transform="rotate(1 240 200)" />
+                      {/* Area chart */}
+                      <path 
+                        d="M 195 230 L 210 210 L 225 215 L 240 195 L 255 205 L 270 185 L 285 190 L 285 230 Z" 
+                        fill="#6e1d27" 
+                        opacity="0.3" 
+                        transform="rotate(1 240 200)"
+                      />
+                      <polyline 
+                        points="195,230 210,210 225,215 240,195 255,205 270,185 285,190" 
+                        fill="none" 
+                        stroke="#6e1d27" 
+                        strokeWidth="2.5" 
+                        transform="rotate(1 240 200)"
+                      />
+                    </motion.g>
+                  </motion.svg>
+                </div>
+              </div>
             </div>
           </div>
         </motion.div>

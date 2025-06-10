@@ -20,11 +20,7 @@ export default function Navbar() {
   }, []);
 
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-      scrolled 
-        ? 'bg-[#f9efe8]/95 backdrop-blur-xl border-b border-[#6e1d27]/20 shadow-xl shadow-[#6e1d27]/10' 
-        : 'bg-transparent'
-    }`}>
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-transparent">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo and Brand */}
@@ -48,11 +44,7 @@ export default function Navbar() {
             onClick={() => {
               router.push('/auth');
             }}
-            className={`px-6 py-2 font-semibold rounded-full transform hover:scale-105 transition-all duration-300 font-ibm-plex tracking-wide ${
-              scrolled
-                ? 'bg-[#6e1d27] hover:bg-[#912d3c] text-[#f9efe8] shadow-lg shadow-[#b6454e]/30 hover:shadow-xl hover:shadow-[#b6454e]/40'
-                : 'bg-[#6e1d27] hover:bg-[#912d3c] text-[#f9efe8] shadow-lg shadow-[#b6454e]/20 hover:shadow-xl hover:shadow-[#b6454e]/30 backdrop-blur-sm border border-[#6e1d27]/10'
-            }`}
+            className="bg-[#6e1d27] hover:bg-[#912d3c] text-[#f9efe8] px-6 py-2 font-semibold rounded-full shadow-lg shadow-[#b6454e]/20 hover:shadow-xl hover:shadow-[#b6454e]/30 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm border border-[#6e1d27]/10 font-ibm-plex tracking-wide"
           >
             Try Now
           </Button>
