@@ -7,6 +7,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import Hero from '@/components/Hero';
 import ScrollSection from '@/components/ScrollSection';
+import MeetTheTeam from '@/components/MeetTheTeam';
 
 export default function Home() {
   const [mounted, setMounted] = useState(false);
@@ -70,6 +71,7 @@ export default function Home() {
       <div className="relative z-10">
         <Hero />
         <ScrollSection />
+        <MeetTheTeam />
       </div>
     </main>
   );
