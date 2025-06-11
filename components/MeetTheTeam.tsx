@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import Image from 'next/image';
-import { Brain, Code, Users, Twitter } from 'lucide-react';
+import { Brain, Code, Users } from 'lucide-react';
 
 const teamMembers = [
   {
@@ -106,7 +106,7 @@ export default function MeetTheTeam() {
                 {/* Member Info with hand-drawn styling - Compact Layout */}
                 <div className="text-center relative z-10">
                   {/* Name */}
-                  <h3 className="text-xl sm:text-2xl font-bold text-[#3d0e15] mb-1 font-ibm-plex group-hover:text-[#6e1d27] transition-colors duration-300 hand-drawn-text">
+                  <h3 className="text-xl sm:text-2xl font-bold text-[#3d0e15] font-ibm-plex group-hover:text-[#6e1d27] transition-colors duration-300 hand-drawn-text">
                     {member.name}
                   </h3>
                   
@@ -115,9 +115,8 @@ export default function MeetTheTeam() {
                     {member.role}
                   </p>
                   
-                  {/* Twitter Handle with Icon */}
-                  <div className="flex items-center justify-center gap-1 mb-3">
-                    <Twitter className="w-3 h-3 text-[#6e1d27]" />
+                  {/* Twitter Handle - No Icon */}
+                  <div className="mb-3">
                     <span className="text-sm text-[#6e1d27] font-ibm-plex font-medium">
                       {member.twitter}
                     </span>
