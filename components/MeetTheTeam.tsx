@@ -46,7 +46,7 @@ export default function MeetTheTeam() {
             MEET THE TEAM
           </h2>
           <p className="text-base sm:text-lg text-[#6e1d27] max-w-2xl mx-auto font-ibm-plex leading-relaxed">
-            The brilliant minds behind Datrix, working together to revolutionize how you interact with data.
+            The brilliant minds behind Datrix
           </p>
         </motion.div>
       </div>
@@ -109,9 +109,9 @@ export default function MeetTheTeam() {
                   <h3 className="text-xl sm:text-2xl font-bold text-[#3d0e15] font-ibm-plex group-hover:text-[#6e1d27] transition-colors duration-300 hand-drawn-text">
                     {member.name}
                   </h3>
-                  
+                  <br />
                   {/* Role - On separate line */}
-                  <p className="text-base font-semibold text-[#6e1d27] mb-2 font-ibm-plex hand-drawn-text">
+                  <p className="text-base font-semibold text-[#6e1d27]  font-ibm-plex hand-drawn-text">
                     {member.role}
                   </p>
                   
