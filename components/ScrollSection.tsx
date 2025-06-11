@@ -12,38 +12,38 @@ export default function ScrollSection() {
   // First section scroll progress
   const { scrollYProgress } = useScroll({
     target: containerRef,
-    offset: ["start end", "end start"]
+    offset: ["start end", "center center"]
   });
 
   // CRM section scroll progress
   const { scrollYProgress: crmScrollProgress } = useScroll({
     target: crmSectionRef,
-    offset: ["start end", "end start"]
+    offset: ["start end", "center center"]
   });
 
   // Insights section scroll progress
   const { scrollYProgress: insightsScrollProgress } = useScroll({
     target: insightsSectionRef,
-    offset: ["start end", "end start"]
+    offset: ["start end", "center center"]
   });
 
   // Transform values for first section
-  const opacity = useTransform(scrollYProgress, [0, 0.3, 0.7, 1], [0, 1, 1, 0]);
-  const boxProgress = useTransform(scrollYProgress, [0.2, 0.8], [0, 1]);
-  const textOpacity = useTransform(scrollYProgress, [0.3, 0.6], [0, 1]);
-  const textY = useTransform(scrollYProgress, [0.3, 0.6], [50, 0]);
+  const opacity = useTransform(scrollYProgress, [0, 0.3, 1, 1.2], [0, 1, 1, 0]);
+  const boxProgress = useTransform(scrollYProgress, [0.2, 1], [0, 1]);
+  const textOpacity = useTransform(scrollYProgress, [0.3, 1], [0, 1]);
+  const textY = useTransform(scrollYProgress, [0.3, 1], [50, 0]);
 
   // Transform values for CRM section - WITH FADE OUT!
-  const crmOpacity = useTransform(crmScrollProgress, [0, 0.3, 0.7, 1], [0, 1, 1, 0]);
-  const crmTableProgress = useTransform(crmScrollProgress, [0.2, 0.8], [0, 1]);
-  const crmTextOpacity = useTransform(crmScrollProgress, [0.3, 0.6, 0.8, 1], [0, 1, 1, 0]);
-  const crmTextY = useTransform(crmScrollProgress, [0.3, 0.6], [50, 0]);
+  const crmOpacity = useTransform(crmScrollProgress, [0, 0.3, 1, 1.2], [0, 1, 1, 0]);
+  const crmTableProgress = useTransform(crmScrollProgress, [0.2, 1], [0, 1]);
+  const crmTextOpacity = useTransform(crmScrollProgress, [0.3, 1], [0, 1]);
+  const crmTextY = useTransform(crmScrollProgress, [0.3, 1], [50, 0]);
 
   // Transform values for Insights section - WITH FADE OUT!
-  const insightsOpacity = useTransform(insightsScrollProgress, [0, 0.3, 0.7, 1], [0, 1, 1, 0]);
-  const insightsBoardProgress = useTransform(insightsScrollProgress, [0.2, 0.8], [0, 1]);
-  const insightsTextOpacity = useTransform(insightsScrollProgress, [0.3, 0.6, 0.8, 1], [0, 1, 1, 0]);
-  const insightsTextY = useTransform(insightsScrollProgress, [0.3, 0.6], [50, 0]);
+  const insightsOpacity = useTransform(insightsScrollProgress, [0, 0.3, 1, 1.2], [0, 1, 1, 0]);
+  const insightsBoardProgress = useTransform(insightsScrollProgress, [0.2, 1], [0, 1]);
+  const insightsTextOpacity = useTransform(insightsScrollProgress, [0.3, 1], [0, 1]);
+  const insightsTextY = useTransform(insightsScrollProgress, [0.3, 1], [50, 0]);
 
   // Icons data
   const icons = [
@@ -163,7 +163,7 @@ export default function ScrollSection() {
                         strokeLinecap="round"
                         strokeLinejoin="round"
                         initial={{ pathLength: 0 }}
-                        animate={{ pathLength: boxProgress }}
+                        style={{ pathLength: boxProgress }}
                         transition={{
                           duration: 2,
                           ease: "easeInOut"
@@ -245,7 +245,7 @@ export default function ScrollSection() {
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       initial={{ pathLength: 0 }}
-                      animate={{ pathLength: boxProgress }}
+                      style={{ pathLength: boxProgress }}
                       transition={{
                         duration: 2,
                         ease: "easeInOut"
@@ -342,7 +342,7 @@ export default function ScrollSection() {
                         strokeWidth="1"
                         rx="8"
                         initial={{ pathLength: 0 }}
-                        animate={{ pathLength: crmTableProgress }}
+                        style={{ pathLength: crmTableProgress }}
                         transition={{ duration: 1, ease: "easeInOut" }}
                       />
 
@@ -355,7 +355,7 @@ export default function ScrollSection() {
                         stroke="#6e1d27"
                         strokeWidth="1"
                         initial={{ pathLength: 0 }}
-                        animate={{ pathLength: crmTableProgress }}
+                        style={{ pathLength: crmTableProgress }}
                         transition={{ duration: 1, delay: 0.2, ease: "easeInOut" }}
                       />
 
@@ -370,7 +370,7 @@ export default function ScrollSection() {
                           stroke="#6e1d27"
                           strokeWidth="0.8"
                           initial={{ pathLength: 0 }}
-                          animate={{ pathLength: crmTableProgress }}
+                          style={{ pathLength: crmTableProgress }}
                           transition={{ duration: 0.8, delay: 0.3 + index * 0.1, ease: "easeInOut" }}
                         />
                       ))}
@@ -386,7 +386,7 @@ export default function ScrollSection() {
                           stroke="#6e1d27"
                           strokeWidth="0.6"
                           initial={{ pathLength: 0 }}
-                          animate={{ pathLength: crmTableProgress }}
+                          style={{ pathLength: crmTableProgress }}
                           transition={{ duration: 0.6, delay: 0.6 + index * 0.1, ease: "easeInOut" }}
                         />
                       ))}
@@ -400,7 +400,7 @@ export default function ScrollSection() {
                         fontWeight="600"
                         textAnchor="middle"
                         initial={{ opacity: 0 }}
-                        animate={{ opacity: crmTableProgress }}
+                        style={{ opacity: crmTableProgress }}
                         transition={{ duration: 0.5, delay: 1.2 }}
                       >
                         Name
@@ -413,7 +413,7 @@ export default function ScrollSection() {
                         fontWeight="600"
                         textAnchor="middle"
                         initial={{ opacity: 0 }}
-                        animate={{ opacity: crmTableProgress }}
+                        style={{ opacity: crmTableProgress }}
                         transition={{ duration: 0.5, delay: 1.3 }}
                       >
                         Email
@@ -426,7 +426,7 @@ export default function ScrollSection() {
                         fontWeight="600"
                         textAnchor="middle"
                         initial={{ opacity: 0 }}
-                        animate={{ opacity: crmTableProgress }}
+                        style={{ opacity: crmTableProgress }}
                         transition={{ duration: 0.5, delay: 1.4 }}
                       >
                         Status
@@ -439,7 +439,7 @@ export default function ScrollSection() {
                         fontWeight="600"
                         textAnchor="middle"
                         initial={{ opacity: 0 }}
-                        animate={{ opacity: crmTableProgress }}
+                        style={{ opacity: crmTableProgress }}
                         transition={{ duration: 0.5, delay: 1.5 }}
                       >
                         Date
@@ -461,7 +461,7 @@ export default function ScrollSection() {
                             fontSize="10"
                             textAnchor="middle"
                             initial={{ opacity: 0 }}
-                            animate={{ opacity: crmTableProgress }}
+                            style={{ opacity: crmTableProgress }}
                             transition={{ duration: 0.3, delay: 1.6 + index * 0.1 }}
                           >
                             {row.name}
@@ -473,7 +473,7 @@ export default function ScrollSection() {
                             fontSize="10"
                             textAnchor="middle"
                             initial={{ opacity: 0 }}
-                            animate={{ opacity: crmTableProgress }}
+                            style={{ opacity: crmTableProgress }}
                             transition={{ duration: 0.3, delay: 1.7 + index * 0.1 }}
                           >
                             {row.email}
@@ -485,7 +485,7 @@ export default function ScrollSection() {
                             fontSize="10"
                             textAnchor="middle"
                             initial={{ opacity: 0 }}
-                            animate={{ opacity: crmTableProgress }}
+                            style={{ opacity: crmTableProgress }}
                             transition={{ duration: 0.3, delay: 1.8 + index * 0.1 }}
                           >
                             {row.status}
@@ -497,7 +497,7 @@ export default function ScrollSection() {
                             fontSize="10"
                             textAnchor="middle"
                             initial={{ opacity: 0 }}
-                            animate={{ opacity: crmTableProgress }}
+                            style={{ opacity: crmTableProgress }}
                             transition={{ duration: 0.3, delay: 1.9 + index * 0.1 }}
                           >
                             {row.date}
@@ -534,7 +534,7 @@ export default function ScrollSection() {
                       strokeWidth="1.2"
                       rx="10"
                       initial={{ pathLength: 0 }}
-                      animate={{ pathLength: crmTableProgress }}
+                      style={{ pathLength: crmTableProgress }}
                       transition={{ duration: 1, ease: "easeInOut" }}
                     />
 
@@ -547,7 +547,7 @@ export default function ScrollSection() {
                       stroke="#6e1d27"
                       strokeWidth="1.2"
                       initial={{ pathLength: 0 }}
-                      animate={{ pathLength: crmTableProgress }}
+                      style={{ pathLength: crmTableProgress }}
                       transition={{ duration: 1, delay: 0.2, ease: "easeInOut" }}
                     />
 
@@ -562,7 +562,7 @@ export default function ScrollSection() {
                         stroke="#6e1d27"
                         strokeWidth="1"
                         initial={{ pathLength: 0 }}
-                        animate={{ pathLength: crmTableProgress }}
+                        style={{ pathLength: crmTableProgress }}
                         transition={{ duration: 0.8, delay: 0.3 + index * 0.1, ease: "easeInOut" }}
                       />
                     ))}
@@ -578,7 +578,7 @@ export default function ScrollSection() {
                         stroke="#6e1d27"
                         strokeWidth="0.8"
                         initial={{ pathLength: 0 }}
-                        animate={{ pathLength: crmTableProgress }}
+                        style={{ pathLength: crmTableProgress }}
                         transition={{ duration: 0.6, delay: 0.6 + index * 0.1, ease: "easeInOut" }}
                       />
                     ))}
@@ -592,7 +592,7 @@ export default function ScrollSection() {
                       fontWeight="600"
                       textAnchor="middle"
                       initial={{ opacity: 0 }}
-                      animate={{ opacity: crmTableProgress }}
+                      style={{ opacity: crmTableProgress }}
                       transition={{ duration: 0.5, delay: 1.2 }}
                     >
                       Name
@@ -605,7 +605,7 @@ export default function ScrollSection() {
                       fontWeight="600"
                       textAnchor="middle"
                       initial={{ opacity: 0 }}
-                      animate={{ opacity: crmTableProgress }}
+                      style={{ opacity: crmTableProgress }}
                       transition={{ duration: 0.5, delay: 1.3 }}
                     >
                       Email
@@ -618,7 +618,7 @@ export default function ScrollSection() {
                       fontWeight="600"
                       textAnchor="middle"
                       initial={{ opacity: 0 }}
-                      animate={{ opacity: crmTableProgress }}
+                      style={{ opacity: crmTableProgress }}
                       transition={{ duration: 0.5, delay: 1.4 }}
                     >
                       Status
@@ -631,7 +631,7 @@ export default function ScrollSection() {
                       fontWeight="600"
                       textAnchor="middle"
                       initial={{ opacity: 0 }}
-                      animate={{ opacity: crmTableProgress }}
+                      style={{ opacity: crmTableProgress }}
                       transition={{ duration: 0.5, delay: 1.5 }}
                     >
                       Date
@@ -653,7 +653,7 @@ export default function ScrollSection() {
                           fontSize="12"
                           textAnchor="middle"
                           initial={{ opacity: 0 }}
-                          animate={{ opacity: crmTableProgress }}
+                          style={{ opacity: crmTableProgress }}
                           transition={{ duration: 0.3, delay: 1.6 + index * 0.1 }}
                         >
                           {row.name}
@@ -665,7 +665,7 @@ export default function ScrollSection() {
                           fontSize="12"
                           textAnchor="middle"
                           initial={{ opacity: 0 }}
-                          animate={{ opacity: crmTableProgress }}
+                          style={{ opacity: crmTableProgress }}
                           transition={{ duration: 0.3, delay: 1.7 + index * 0.1 }}
                         >
                           {row.email}
@@ -677,7 +677,7 @@ export default function ScrollSection() {
                           fontSize="12"
                           textAnchor="middle"
                           initial={{ opacity: 0 }}
-                          animate={{ opacity: crmTableProgress }}
+                          style={{ opacity: crmTableProgress }}
                           transition={{ duration: 0.3, delay: 1.8 + index * 0.1 }}
                         >
                           {row.status}
@@ -689,7 +689,7 @@ export default function ScrollSection() {
                           fontSize="12"
                           textAnchor="middle"
                           initial={{ opacity: 0 }}
-                          animate={{ opacity: crmTableProgress }}
+                          style={{ opacity: crmTableProgress }}
                           transition={{ duration: 0.3, delay: 1.9 + index * 0.1 }}
                         >
                           {row.date}
@@ -771,17 +771,14 @@ export default function ScrollSection() {
                         strokeWidth="1.5"
                         rx="12"
                         initial={{ pathLength: 0 }}
-                        animate={{ pathLength: insightsBoardProgress }}
+                        style={{ pathLength: insightsBoardProgress }}
                         transition={{ duration: 1, ease: "easeInOut" }}
                       />
 
                       {/* Sticky Note 1 - Bar Chart */}
                       <motion.g
                         initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ 
-                          opacity: insightsBoardProgress,
-                          scale: insightsBoardProgress > 0.3 ? 1 : 0.8
-                        }}
+                        style={{ opacity: insightsBoardProgress }}
                         transition={{ duration: 0.6, delay: 0.5 }}
                       >
                         <rect x="30" y="40" width="80" height="70" fill="#f9efe8" stroke="#6e1d27" strokeWidth="1" rx="6" transform="rotate(-2 70 75)" />
@@ -796,10 +793,7 @@ export default function ScrollSection() {
                       {/* Sticky Note 2 - Pie Chart */}
                       <motion.g
                         initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ 
-                          opacity: insightsBoardProgress,
-                          scale: insightsBoardProgress > 0.4 ? 1 : 0.8
-                        }}
+                        style={{ opacity: insightsBoardProgress }}
                         transition={{ duration: 0.6, delay: 0.7 }}
                       >
                         <rect x="280" y="35" width="80" height="70" fill="#f9efe8" stroke="#6e1d27" strokeWidth="1" rx="6" transform="rotate(3 320 70)" />
@@ -814,10 +808,7 @@ export default function ScrollSection() {
                       {/* Sticky Note 3 - Line Chart */}
                       <motion.g
                         initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ 
-                          opacity: insightsBoardProgress,
-                          scale: insightsBoardProgress > 0.5 ? 1 : 0.8
-                        }}
+                        style={{ opacity: insightsBoardProgress }}
                         transition={{ duration: 0.6, delay: 0.9 }}
                       >
                         <rect x="25" y="140" width="90" height="80" fill="#f9efe8" stroke="#6e1d27" strokeWidth="1" rx="6" transform="rotate(-1 70 180)" />
@@ -843,10 +834,7 @@ export default function ScrollSection() {
                       {/* Sticky Note 4 - Donut Chart */}
                       <motion.g
                         initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ 
-                          opacity: insightsBoardProgress,
-                          scale: insightsBoardProgress > 0.6 ? 1 : 0.8
-                        }}
+                        style={{ opacity: insightsBoardProgress }}
                         transition={{ duration: 0.6, delay: 1.1 }}
                       >
                         <rect x="270" y="150" width="80" height="70" fill="#f9efe8" stroke="#6e1d27" strokeWidth="1" rx="6" transform="rotate(2 310 185)" />
@@ -862,10 +850,7 @@ export default function ScrollSection() {
                       {/* Sticky Note 5 - Area Chart */}
                       <motion.g
                         initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ 
-                          opacity: insightsBoardProgress,
-                          scale: insightsBoardProgress > 0.7 ? 1 : 0.8
-                        }}
+                        style={{ opacity: insightsBoardProgress }}
                         transition={{ duration: 0.6, delay: 1.3 }}
                       >
                         <rect x="150" y="120" width="90" height="80" fill="#f9efe8" stroke="#6e1d27" strokeWidth="1" rx="6" transform="rotate(1 195 160)" />
@@ -930,17 +915,14 @@ export default function ScrollSection() {
                       strokeWidth="2"
                       rx="15"
                       initial={{ pathLength: 0 }}
-                      animate={{ pathLength: insightsBoardProgress }}
+                      style={{ pathLength: insightsBoardProgress }}
                       transition={{ duration: 1, ease: "easeInOut" }}
                     />
 
                     {/* Sticky Note 1 - Bar Chart */}
                     <motion.g
                       initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ 
-                        opacity: insightsBoardProgress,
-                        scale: insightsBoardProgress > 0.3 ? 1 : 0.8
-                      }}
+                      style={{ opacity: insightsBoardProgress }}
                       transition={{ duration: 0.6, delay: 0.5 }}
                     >
                       <rect x="40" y="50" width="100" height="90" fill="#f9efe8" stroke="#6e1d27" strokeWidth="1.5" rx="8" transform="rotate(-2 90 95)" />
@@ -955,10 +937,7 @@ export default function ScrollSection() {
                     {/* Sticky Note 2 - Pie Chart */}
                     <motion.g
                       initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ 
-                        opacity: insightsBoardProgress,
-                        scale: insightsBoardProgress > 0.4 ? 1 : 0.8
-                      }}
+                      style={{ opacity: insightsBoardProgress }}
                       transition={{ duration: 0.6, delay: 0.7 }}
                     >
                       <rect x="340" y="45" width="100" height="90" fill="#f9efe8" stroke="#6e1d27" strokeWidth="1.5" rx="8" transform="rotate(3 390 90)" />
@@ -973,10 +952,7 @@ export default function ScrollSection() {
                     {/* Sticky Note 3 - Line Chart */}
                     <motion.g
                       initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ 
-                        opacity: insightsBoardProgress,
-                        scale: insightsBoardProgress > 0.5 ? 1 : 0.8
-                      }}
+                      style={{ opacity: insightsBoardProgress }}
                       transition={{ duration: 0.6, delay: 0.9 }}
                     >
                       <rect x="35" y="180" width="110" height="100" fill="#f9efe8" stroke="#6e1d27" strokeWidth="1.5" rx="8" transform="rotate(-1 90 230)" />
@@ -1001,10 +977,7 @@ export default function ScrollSection() {
                     {/* Sticky Note 4 - Donut Chart */}
                     <motion.g
                       initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ 
-                        opacity: insightsBoardProgress,
-                        scale: insightsBoardProgress > 0.6 ? 1 : 0.8
-                      }}
+                      style={{ opacity: insightsBoardProgress }}
                       transition={{ duration: 0.6, delay: 1.1 }}
                     >
                       <rect x="330" y="190" width="100" height="90" fill="#f9efe8" stroke="#6e1d27" strokeWidth="1.5" rx="8" transform="rotate(2 380 235)" />
@@ -1020,10 +993,7 @@ export default function ScrollSection() {
                     {/* Sticky Note 5 - Area Chart */}
                     <motion.g
                       initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ 
-                        opacity: insightsBoardProgress,
-                        scale: insightsBoardProgress > 0.7 ? 1 : 0.8
-                      }}
+                      style={{ opacity: insightsBoardProgress }}
                       transition={{ duration: 0.6, delay: 1.3 }}
                     >
                       <rect x="180" y="150" width="120" height="100" fill="#f9efe8" stroke="#6e1d27" strokeWidth="1.5" rx="8" transform="rotate(1 240 200)" />
