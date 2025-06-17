@@ -82,7 +82,7 @@ export function OnboardingNavbar({ onLogout }: { onLogout: () => void }) {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => router.push('/dashboard')}
+              onClick={() => router.push('/stickyanalysis')}
               className="hand-drawn-border bg-transparent backdrop-blur-sm border-2 border-[#6e1d27] text-[#6e1d27] hover:bg-[#6e1d27] hover:text-white transition-all duration-300 font-ibm-plex p-2"
             >
               <BarChart3 className="h-4 w-4" />
@@ -90,7 +90,7 @@ export function OnboardingNavbar({ onLogout }: { onLogout: () => void }) {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => router.push('/')}
+              onClick={() => router.push('/dashboard')}
               className="hand-drawn-border bg-transparent backdrop-blur-sm border-2 border-[#6e1d27] text-[#6e1d27] hover:bg-[#6e1d27] hover:text-white transition-all duration-300 font-ibm-plex p-2"
             >
               <Home className="h-4 w-4" />
