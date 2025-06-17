@@ -154,72 +154,93 @@ html {
   transition: transform 0.05s linear;
 }
 
-/* Hand-drawn styling for auth page - CLEANED UP VERSION */
+/* Hand-drawn styling for auth page */
 .hand-drawn-container {
-  border-radius: 16px;
+  border-radius: 20px;
   position: relative;
-  border: 2px solid #6e1d27;
   box-shadow: 
-    0 4px 6px -1px rgba(110, 29, 39, 0.1),
-    0 2px 4px -1px rgba(110, 29, 39, 0.06);
+    0 0 0 2px #6e1d27,
+    5px 5px 0 0 rgba(110, 29, 39, 0.1),
+    10px 10px 0 0 rgba(110, 29, 39, 0.05);
+  transform: rotate(-0.5deg);
   transition: all 0.3s ease;
-  /* Removed the rotation and complex shadows that were causing jagged edges */
 }
 
 .hand-drawn-container:hover {
-  transform: scale(1.02);
+  transform: rotate(0deg) scale(1.02);
   box-shadow: 
-    0 10px 15px -3px rgba(110, 29, 39, 0.1),
-    0 4px 6px -2px rgba(110, 29, 39, 0.05);
+    0 0 0 2px #6e1d27,
+    8px 8px 0 0 rgba(110, 29, 39, 0.15),
+    15px 15px 0 0 rgba(110, 29, 39, 0.08);
 }
 
-/* Removed the ::before pseudo-element that was causing double borders */
+.hand-drawn-container::before {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  right: -3px;
+  bottom: -3px;
+  border: 2px solid #6e1d27;
+  border-radius: 20px;
+  opacity: 0.3;
+  transform: rotate(1deg);
+  z-index: -1;
+}
 
 .hand-drawn-input {
-  border-radius: 8px;
+  border-radius: 12px;
   position: relative;
+  transform: rotate(-0.2deg);
   transition: all 0.2s ease;
-  box-shadow: 0 1px 3px 0 rgba(110, 29, 39, 0.1);
-  /* Removed rotation and complex styling */
+  box-shadow: 2px 2px 0 0 rgba(110, 29, 39, 0.1);
 }
 
 .hand-drawn-input:focus {
-  box-shadow: 0 4px 6px -1px rgba(110, 29, 39, 0.1);
+  transform: rotate(0deg);
+  box-shadow: 3px 3px 0 0 rgba(110, 29, 39, 0.2);
   border-color: #912d3c;
 }
 
 .hand-drawn-button {
-  border-radius: 12px;
+  border-radius: 15px;
   position: relative;
+  transform: rotate(-0.3deg);
   transition: all 0.2s ease;
   box-shadow: 
-    0 2px 4px 0 rgba(61, 14, 21, 0.1);
-  /* Removed rotation and complex styling */
+    0 0 0 2px #3d0e15,
+    4px 4px 0 0 rgba(61, 14, 21, 0.2);
 }
 
 .hand-drawn-button:hover {
-  transform: translateY(-1px);
+  transform: rotate(0deg) translateY(-2px);
   box-shadow: 
-    0 4px 6px -1px rgba(61, 14, 21, 0.15);
+    0 0 0 2px #3d0e15,
+    6px 6px 0 0 rgba(61, 14, 21, 0.3);
 }
 
 .hand-drawn-border {
-  border-radius: 8px;
+  border-radius: 12px;
   position: relative;
+  transform: rotate(-0.2deg);
   transition: all 0.2s ease;
-  box-shadow: 0 1px 3px 0 rgba(110, 29, 39, 0.1);
-  /* Removed rotation and complex styling */
+  box-shadow: 2px 2px 0 0 rgba(110, 29, 39, 0.1);
 }
 
 .hand-drawn-border:hover {
-  box-shadow: 0 4px 6px -1px rgba(110, 29, 39, 0.1);
+  transform: rotate(0deg);
+  box-shadow: 3px 3px 0 0 rgba(110, 29, 39, 0.2);
 }
 
 .hand-drawn-text {
   position: relative;
   display: inline-block;
+  transform: rotate(-0.1deg);
   transition: transform 0.2s ease;
-  /* Removed rotation */
+}
+
+.hand-drawn-text:hover {
+  transform: rotate(0deg);
 }
 
 .hand-drawn-path {
@@ -234,39 +255,14 @@ html {
   }
 }
 
-/* Removed the wobble animation that was causing movement */
-
-/* Custom scrollbar styling for chat */
-.chat-scrollbar::-webkit-scrollbar {
-  width: 6px;
+/* Subtle wobble animation for decorative elements */
+@keyframes wobble {
+  0%, 100% { transform: rotate(-0.5deg); }
+  25% { transform: rotate(0.5deg); }
+  50% { transform: rotate(-0.3deg); }
+  75% { transform: rotate(0.3deg); }
 }
 
-.chat-scrollbar::-webkit-scrollbar-track {
-  background: rgba(110, 29, 39, 0.1);
-  border-radius: 3px;
-}
-
-.chat-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(110, 29, 39, 0.3);
-  border-radius: 3px;
-}
-
-.chat-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(110, 29, 39, 0.5);
-}
-
-/* Ensure smooth edges on all elements */
-* {
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-/* Fix any potential border rendering issues */
-.hand-drawn-container,
-.hand-drawn-input,
-.hand-drawn-button,
-.hand-drawn-border {
-  -webkit-backface-visibility: hidden;
-  backface-visibility: hidden;
-  transform: translateZ(0);
+.hand-drawn-container {
+  animation: wobble 8s ease-in-out infinite;
 }
