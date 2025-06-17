@@ -212,16 +212,16 @@ function StickyAnalysisFlow() {
       {/* Navbar */}
       <OnboardingNavbar onLogout={logout} />
 
-      {/* Main Content */}
-      <div className="relative z-10 pt-20 px-4 sm:px-6 lg:px-8 pb-8 h-screen overflow-hidden">
-        <div className="max-w-full mx-auto h-full">
+      {/* Main Content - Fixed height layout */}
+      <div className="relative z-10 pt-20 px-4 sm:px-6 lg:px-8 pb-4" style={{ height: '100vh' }}>
+        <div className="max-w-full mx-auto h-full flex flex-col">
           
-          {/* Header */}
+          {/* Header - Fixed height */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: "easeOut" }}
-            className="text-center mb-6"
+            className="text-center mb-6 flex-shrink-0"
           >
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#3d0e15] mb-4 font-ibm-plex hand-drawn-text">
               Sticky Analysis Board
@@ -231,12 +231,12 @@ function StickyAnalysisFlow() {
             </p>
           </motion.div>
 
-          {/* React Flow Board */}
+          {/* React Flow Board - Takes remaining height */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
-            className="relative h-full"
+            className="flex-1 min-h-0"
           >
             <div className="hand-drawn-container bg-white/40 backdrop-blur-sm relative h-full overflow-hidden">
               {/* Decorative corner doodles */}
