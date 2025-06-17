@@ -1,42 +1,47 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { FlickeringGrid } from '@/components/ui/flickering-grid';
 import { 
   Plus,
-  X,
-  BarChart3,
-  PieChart,
-  TrendingUp,
-  Activity,
   DollarSign,
+  BarChart3,
+  TrendingUp,
   Users,
   Target,
   Calendar,
-  Maximize2,
-  Minimize2,
-  Move,
-  Sparkles
+  Sparkles,
+  ZoomIn,
+  ZoomOut,
+  RotateCcw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import { OnboardingNavbar } from '@/components/Navbar';
+import ReactFlow, {
+  Node,
+  Edge,
+  addEdge,
+  Connection,
+  useNodesState,
+  useEdgesState,
+  Controls,
+  Background,
+  BackgroundVariant,
+  MiniMap,
+  ReactFlowProvider,
+  useReactFlow
+} from 'reactflow';
+import ChartNode from '@/components/ChartNode';
 
-interface StickyChart {
-  id: string;
-  title: string;
-  type: 'bar' | 'pie' | 'line' | 'area' | 'donut';
-  description: string;
-  position: { x: number; y: number };
-  size: { width: number; height: number };
-  color: string;
-  data?: any;
-  rotation: number;
-}
+import 'reactflow/dist/style.css';
+
+const nodeTypes = {
+  chartNode: ChartNode,
+};
 
 const analysisTypes = [
   { id: 'sales-reporting', name: 'Sales Reporting', icon: DollarSign, color: '#10b981' },
@@ -47,24 +52,76 @@ const analysisTypes = [
   { id: 'time-analysis', name: 'Time Analysis', icon: Calendar, color: '#06b6d4' }
 ];
 
-export default function StickyAnalysisPage() {
+const initialNodes: Node[] = [
+  {
+    id: '1',
+    type: 'chartNode',
+    position: { x: 100, y: 100 },
+    data: {
+      title: 'Q1 Sales Performance',
+      type: 'bar',
+      description: 'Monthly sales data for Q1 2024',
+      color: '#10b981',
+      onDelete: () => {}
+    }
+  },
+  {
+    id: '2',
+    type: 'chartNode',
+    position: { x: 500, y: 150 },
+    data: {
+      title: 'Customer Segments',
+      type: 'pie',
+      description: 'Customer distribution by segment',
+      color: '#f59e0b',
+      onDelete: () => {}
+    }
+  },
+  {
+    id: '3',
+    type: 'chartNode',
+    position: { x: 900, y: 80 },
+    data: {
+      title: 'Revenue Trend',
+      type: 'line',
+      description: 'Revenue growth over time',
+      color: '#3b82f6',
+      onDelete: () => {}
+    }
+  }
+];
+
+const initialEdges: Edge[] = [];
+
+function StickyAnalysisFlow() {
   const [mounted, setMounted] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [charts, setCharts] = useState<StickyChart[]>([]);
+  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedAnalysisType, setSelectedAnalysisType] = useState('');
   const [analysisDescription, setAnalysisDescription] = useState('');
-  const [draggedChart, setDraggedChart] = useState<string | null>(null);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-  const boardRef = useRef<HTMLDivElement>(null);
+  const { fitView, zoomIn, zoomOut } = useReactFlow();
   const router = useRouter();
 
   useEffect(() => {
     setMounted(true);
     checkUser();
-    initializeBoard();
   }, []);
+
+  // Update delete handlers when nodes change
+  useEffect(() => {
+    setNodes((nds) =>
+      nds.map((node) => ({
+        ...node,
+        data: {
+          ...node.data,
+          onDelete: handleDeleteChart
+        }
+      }))
+    );
+  }, [setNodes]);
 
   const checkUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -81,42 +138,10 @@ export default function StickyAnalysisPage() {
     router.push('/');
   };
 
-  const initializeBoard = () => {
-    // Add some sample charts to start with
-    const sampleCharts: StickyChart[] = [
-      {
-        id: '1',
-        title: 'Q1 Sales Performance',
-        type: 'bar',
-        description: 'Monthly sales data for Q1 2024',
-        position: { x: 50, y: 100 },
-        size: { width: 300, height: 200 },
-        color: '#10b981',
-        rotation: -1
-      },
-      {
-        id: '2',
-        title: 'Customer Segments',
-        type: 'pie',
-        description: 'Customer distribution by segment',
-        position: { x: 400, y: 150 },
-        size: { width: 280, height: 180 },
-        color: '#f59e0b',
-        rotation: 2
-      },
-      {
-        id: '3',
-        title: 'Revenue Trend',
-        type: 'line',
-        description: 'Revenue growth over time',
-        position: { x: 750, y: 80 },
-        size: { width: 320, height: 220 },
-        color: '#3b82f6',
-        rotation: -0.5
-      }
-    ];
-    setCharts(sampleCharts);
-  };
+  const onConnect = useCallback(
+    (params: Connection) => setEdges((eds) => addEdge(params, eds)),
+    [setEdges]
+  );
 
   const handleAddChart = () => {
     if (!selectedAnalysisType || !analysisDescription.trim()) return;
@@ -124,123 +149,46 @@ export default function StickyAnalysisPage() {
     const analysisType = analysisTypes.find(type => type.id === selectedAnalysisType);
     if (!analysisType) return;
 
-    const newChart: StickyChart = {
+    const chartTypes = ['bar', 'pie', 'line', 'area', 'donut'] as const;
+    const randomType = chartTypes[Math.floor(Math.random() * chartTypes.length)];
+
+    const newNode: Node = {
       id: Date.now().toString(),
-      title: analysisDescription,
-      type: 'bar', // Default type, could be dynamic based on analysis
-      description: `Generated from: ${analysisDescription}`,
+      type: 'chartNode',
       position: { 
-        x: Math.random() * 400 + 100, 
-        y: Math.random() * 300 + 150 
+        x: Math.random() * 800 + 100, 
+        y: Math.random() * 400 + 100 
       },
-      size: { width: 300, height: 200 },
-      color: analysisType.color,
-      rotation: (Math.random() - 0.5) * 4 // Random rotation between -2 and 2 degrees
+      data: {
+        title: analysisDescription,
+        type: randomType,
+        description: `Generated from: ${analysisDescription}`,
+        color: analysisType.color,
+        onDelete: handleDeleteChart
+      }
     };
 
-    setCharts(prev => [...prev, newChart]);
+    setNodes((nds) => nds.concat(newNode));
     setShowAddModal(false);
     setSelectedAnalysisType('');
     setAnalysisDescription('');
   };
 
-  const handleDeleteChart = (chartId: string) => {
-    setCharts(prev => prev.filter(chart => chart.id !== chartId));
+  const handleDeleteChart = useCallback((nodeId: string) => {
+    setNodes((nds) => nds.filter((node) => node.id !== nodeId));
+    setEdges((eds) => eds.filter((edge) => edge.source !== nodeId && edge.target !== nodeId));
+  }, [setNodes, setEdges]);
+
+  const handleFitView = () => {
+    fitView({ duration: 800 });
   };
 
-  const handleMouseDown = (e: React.MouseEvent, chartId: string) => {
-    e.preventDefault();
-    const chart = charts.find(c => c.id === chartId);
-    if (!chart) return;
-
-    const rect = e.currentTarget.getBoundingClientRect();
-    setDragOffset({
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top
-    });
-    setDraggedChart(chartId);
+  const handleZoomIn = () => {
+    zoomIn({ duration: 200 });
   };
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!draggedChart || !boardRef.current) return;
-
-    const boardRect = boardRef.current.getBoundingClientRect();
-    const newX = e.clientX - boardRect.left - dragOffset.x;
-    const newY = e.clientY - boardRect.top - dragOffset.y;
-
-    setCharts(prev => prev.map(chart => 
-      chart.id === draggedChart 
-        ? { ...chart, position: { x: Math.max(0, newX), y: Math.max(0, newY) } }
-        : chart
-    ));
-  };
-
-  const handleMouseUp = () => {
-    setDraggedChart(null);
-    setDragOffset({ x: 0, y: 0 });
-  };
-
-  const renderChart = (chart: StickyChart) => {
-    const chartContent = () => {
-      switch (chart.type) {
-        case 'bar':
-          return (
-            <svg viewBox="0 0 200 120" className="w-full h-full">
-              {[40, 60, 80, 55, 70].map((height, index) => (
-                <rect
-                  key={index}
-                  x={20 + index * 30}
-                  y={120 - height}
-                  width={20}
-                  height={height}
-                  fill={chart.color}
-                  opacity={0.8}
-                />
-              ))}
-            </svg>
-          );
-        case 'pie':
-          return (
-            <svg viewBox="0 0 120 120" className="w-full h-full">
-              <circle cx="60" cy="60" r="40" fill="none" stroke={chart.color} strokeWidth="2" />
-              <path d="M 60 20 A 40 40 0 0 1 100 60 L 60 60 Z" fill={chart.color} opacity="0.8" />
-              <path d="M 100 60 A 40 40 0 0 1 60 100 L 60 60 Z" fill={chart.color} opacity="0.6" />
-              <path d="M 60 100 A 40 40 0 0 1 20 60 L 60 60 Z" fill={chart.color} opacity="0.4" />
-            </svg>
-          );
-        case 'line':
-          return (
-            <svg viewBox="0 0 200 120" className="w-full h-full">
-              <polyline
-                points="20,100 50,70 80,80 110,50 140,60 170,30"
-                fill="none"
-                stroke={chart.color}
-                strokeWidth="3"
-              />
-              {[20, 50, 80, 110, 140, 170].map((x, index) => {
-                const y = [100, 70, 80, 50, 60, 30][index];
-                return (
-                  <circle
-                    key={index}
-                    cx={x}
-                    cy={y}
-                    r="4"
-                    fill={chart.color}
-                  />
-                );
-              })}
-            </svg>
-          );
-        default:
-          return (
-            <div className="w-full h-full flex items-center justify-center">
-              <BarChart3 className="w-12 h-12" style={{ color: chart.color }} />
-            </div>
-          );
-      }
-    };
-
-    return chartContent();
+  const handleZoomOut = () => {
+    zoomOut({ duration: 200 });
   };
 
   if (!mounted || loading) {
@@ -283,7 +231,7 @@ export default function StickyAnalysisPage() {
             </p>
           </motion.div>
 
-          {/* Analysis Board */}
+          {/* React Flow Board */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -303,133 +251,109 @@ export default function StickyAnalysisPage() {
                 </svg>
               </div>
 
-              {/* Board Area */}
-              <div 
-                ref={boardRef}
-                className="relative w-full h-full p-6 cursor-default"
-                onMouseMove={handleMouseMove}
-                onMouseUp={handleMouseUp}
-                onMouseLeave={handleMouseUp}
-              >
-                {/* Grid Pattern */}
-                <div className="absolute inset-0 opacity-5 pointer-events-none">
-                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,_#6e1d27_1px,_transparent_1px)] bg-[length:40px_40px]" />
-                </div>
-
-                {/* Sticky Charts */}
-                <AnimatePresence>
-                  {charts.map((chart, index) => (
-                    <motion.div
-                      key={chart.id}
-                      initial={{ opacity: 0, scale: 0.8, rotate: chart.rotation }}
-                      animate={{ 
-                        opacity: 1, 
-                        scale: 1, 
-                        rotate: chart.rotation,
-                        x: chart.position.x,
-                        y: chart.position.y
-                      }}
-                      exit={{ opacity: 0, scale: 0.8 }}
-                      transition={{ duration: 0.4, delay: index * 0.1 }}
-                      className="absolute group cursor-move"
-                      style={{
-                        width: chart.size.width,
-                        height: chart.size.height,
-                        zIndex: draggedChart === chart.id ? 50 : 10
-                      }}
-                      onMouseDown={(e) => handleMouseDown(e, chart.id)}
+              {/* React Flow Container */}
+              <div className="w-full h-full">
+                <ReactFlow
+                  nodes={nodes}
+                  edges={edges}
+                  onNodesChange={onNodesChange}
+                  onEdgesChange={onEdgesChange}
+                  onConnect={onConnect}
+                  nodeTypes={nodeTypes}
+                  fitView
+                  attributionPosition="bottom-left"
+                  className="bg-transparent"
+                  nodesDraggable={true}
+                  nodesConnectable={false}
+                  elementsSelectable={true}
+                  selectNodesOnDrag={false}
+                  panOnDrag={true}
+                  zoomOnScroll={true}
+                  zoomOnPinch={true}
+                  zoomOnDoubleClick={false}
+                  minZoom={0.2}
+                  maxZoom={2}
+                  defaultViewport={{ x: 0, y: 0, zoom: 0.8 }}
+                >
+                  <Background 
+                    variant={BackgroundVariant.Dots} 
+                    gap={40} 
+                    size={1} 
+                    color="#6e1d27" 
+                    style={{ opacity: 0.1 }}
+                  />
+                  
+                  {/* Custom Controls */}
+                  <div className="absolute top-4 right-4 z-10 flex flex-col space-y-2">
+                    <Button
+                      onClick={handleZoomIn}
+                      variant="outline"
+                      size="sm"
+                      className="hand-drawn-border bg-white/80 backdrop-blur-sm border-2 border-[#6e1d27] text-[#6e1d27] hover:bg-[#6e1d27] hover:text-white font-ibm-plex p-2"
                     >
-                      {/* Sticky Note Container */}
-                      <div 
-                        className="relative w-full h-full bg-gradient-to-br from-white to-gray-50 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 border-l-4 group-hover:scale-105"
-                        style={{ 
-                          borderLeftColor: chart.color,
-                          transform: `rotate(${chart.rotation}deg)`,
-                          boxShadow: `4px 4px 12px rgba(110, 29, 39, 0.15), 0 0 0 1px ${chart.color}20`
-                        }}
-                      >
-                        {/* Sticky Note Header */}
-                        <div className="p-4 border-b border-gray-200">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <h3 className="font-bold text-[#3d0e15] font-ibm-plex text-sm mb-1 hand-drawn-text">
-                                {chart.title}
-                              </h3>
-                              <p className="text-xs text-[#6e1d27] font-ibm-plex opacity-75">
-                                {chart.description}
-                              </p>
-                            </div>
-                            <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                              <Button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeleteChart(chart.id);
-                                }}
-                                variant="ghost"
-                                size="sm"
-                                className="w-6 h-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-                              >
-                                <X className="w-3 h-3" />
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Chart Content */}
-                        <div className="p-4 h-full">
-                          <div className="w-full h-full flex items-center justify-center">
-                            {renderChart(chart)}
-                          </div>
-                        </div>
-
-                        {/* Sticky Note Corner Fold */}
-                        <div 
-                          className="absolute top-0 right-0 w-6 h-6 bg-gray-200 opacity-30"
-                          style={{
-                            clipPath: 'polygon(100% 0%, 0% 100%, 100% 100%)',
-                            borderTopRightRadius: '8px'
-                          }}
-                        />
-
-                        {/* Move Handle */}
-                        <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                          <Move className="w-4 h-4 text-gray-400" />
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
-
-                {/* Empty State */}
-                {charts.length === 0 && (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="text-center p-8">
-                      <Sparkles className="w-16 h-16 text-[#6e1d27]/30 mx-auto mb-4" />
-                      <h3 className="text-xl font-bold text-[#3d0e15] font-ibm-plex mb-2">
-                        Your analysis board is empty
-                      </h3>
-                      <p className="text-[#6e1d27] font-ibm-plex mb-4">
-                        Add your first chart to get started with insights
-                      </p>
-                      <Button
-                        onClick={() => setShowAddModal(true)}
-                        className="hand-drawn-button bg-[#6e1d27] hover:bg-[#912d3c] text-white font-ibm-plex"
-                      >
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add Chart
-                      </Button>
-                    </div>
+                      <ZoomIn className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      onClick={handleZoomOut}
+                      variant="outline"
+                      size="sm"
+                      className="hand-drawn-border bg-white/80 backdrop-blur-sm border-2 border-[#6e1d27] text-[#6e1d27] hover:bg-[#6e1d27] hover:text-white font-ibm-plex p-2"
+                    >
+                      <ZoomOut className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      onClick={handleFitView}
+                      variant="outline"
+                      size="sm"
+                      className="hand-drawn-border bg-white/80 backdrop-blur-sm border-2 border-[#6e1d27] text-[#6e1d27] hover:bg-[#6e1d27] hover:text-white font-ibm-plex p-2"
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                    </Button>
                   </div>
-                )}
+
+                  {/* Mini Map */}
+                  <MiniMap 
+                    style={{
+                      backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                      border: '2px solid #6e1d27',
+                      borderRadius: '8px'
+                    }}
+                    maskColor="rgba(110, 29, 39, 0.1)"
+                    nodeColor="#6e1d27"
+                    position="bottom-right"
+                  />
+                </ReactFlow>
               </div>
 
+              {/* Empty State Overlay */}
+              {nodes.length === 0 && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="text-center p-8 pointer-events-auto">
+                    <Sparkles className="w-16 h-16 text-[#6e1d27]/30 mx-auto mb-4" />
+                    <h3 className="text-xl font-bold text-[#3d0e15] font-ibm-plex mb-2">
+                      Your analysis board is empty
+                    </h3>
+                    <p className="text-[#6e1d27] font-ibm-plex mb-4">
+                      Add your first chart to get started with insights
+                    </p>
+                    <Button
+                      onClick={() => setShowAddModal(true)}
+                      className="hand-drawn-button bg-[#6e1d27] hover:bg-[#912d3c] text-white font-ibm-plex"
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add Chart
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               {/* Bottom decorative doodles */}
-              <div className="absolute bottom-2 left-2 w-6 h-3 opacity-20">
+              <div className="absolute bottom-2 left-2 w-6 h-3 opacity-20 z-10">
                 <svg viewBox="0 0 32 16" className="w-full h-full text-[#6e1d27]">
                   <path d="M2 8 Q8 2 16 8 T30 8" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="hand-drawn-path" />
                 </svg>
               </div>
-              <div className="absolute bottom-2 right-2 w-4 h-4 opacity-20">
+              <div className="absolute bottom-2 right-2 w-4 h-4 opacity-20 z-10">
                 <svg viewBox="0 0 24 24" className="w-full h-full text-[#6e1d27]">
                   <path d="M12 2 L22 12 L12 22 L2 12 Z" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="hand-drawn-path" />
                 </svg>
@@ -568,5 +492,13 @@ export default function StickyAnalysisPage() {
       {/* Gradient Overlay for Depth */}
       <div className="absolute inset-0 bg-gradient-to-t from-[#f9efe8]/20 via-transparent to-transparent pointer-events-none" />
     </div>
+  );
+}
+
+export default function StickyAnalysisPage() {
+  return (
+    <ReactFlowProvider>
+      <StickyAnalysisFlow />
+    </ReactFlowProvider>
   );
 }
