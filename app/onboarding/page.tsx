@@ -142,12 +142,12 @@ export default function OnboardingPage() {
   }, []);
 
   const checkUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
+    const { data, error } = await supabase.auth.getUser();
+    if (data?.user) {
+      setUser(data.user);
+    } else {
       router.push('/auth');
-      return;
     }
-    setUser(user);
     setLoading(false);
   };
 
