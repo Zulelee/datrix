@@ -308,364 +308,358 @@ What would you like to do today?`,
       {/* Navbar */}
       <OnboardingNavbar onLogout={logout} />
 
-      {/* Main Content - Fixed height with proper flex layout */}
-      <div className="relative z-10 h-screen flex flex-col">
-        {/* Top padding for navbar */}
-        <div className="h-20 flex-shrink-0"></div>
-        
-        {/* Content area */}
-        <div className="flex-1 px-4 sm:px-6 lg:px-8 pb-4 flex overflow-hidden">
-          <div className="max-w-6xl mx-auto w-full flex overflow-hidden">
-            
-            {/* Sidebar - Connected Sources */}
-            <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
-              className="hidden lg:block w-80 mr-6 flex-shrink-0"
-            >
-              <div className="hand-drawn-container bg-white/60 backdrop-blur-sm p-6 relative h-full overflow-y-auto">
-                <div className="absolute top-2 left-2 w-4 h-4 opacity-30">
-                  <svg viewBox="0 0 24 24" className="w-full h-full text-[#6e1d27]">
-                    <path d="M3 3 L21 3 L21 21 L3 21 Z" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="hand-drawn-path" />
-                  </svg>
-                </div>
-                <div className="absolute top-2 right-2 w-4 h-4 opacity-30">
-                  <svg viewBox="0 0 24 24" className="w-full h-full text-[#6e1d27]">
-                    <circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" strokeWidth="1.5" className="hand-drawn-path" />
-                  </svg>
-                </div>
+      {/* Main Content - Fixed height layout */}
+      <div className="relative z-10 pt-20 px-4 sm:px-6 lg:px-8 pb-4" style={{ height: 'calc(100vh - 1rem)' }}>
+        <div className="max-w-6xl mx-auto h-full flex gap-6">
+          
+          {/* Sidebar - Connected Sources */}
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            className="hidden lg:block w-80 flex-shrink-0"
+          >
+            <div className="hand-drawn-container bg-white/60 backdrop-blur-sm p-6 relative h-full overflow-y-auto">
+              <div className="absolute top-2 left-2 w-4 h-4 opacity-30 z-10">
+                <svg viewBox="0 0 24 24" className="w-full h-full text-[#6e1d27]">
+                  <path d="M3 3 L21 3 L21 21 L3 21 Z" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="hand-drawn-path" />
+                </svg>
+              </div>
+              <div className="absolute top-2 right-2 w-4 h-4 opacity-30 z-10">
+                <svg viewBox="0 0 24 24" className="w-full h-full text-[#6e1d27]">
+                  <circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" strokeWidth="1.5" className="hand-drawn-path" />
+                </svg>
+              </div>
 
-                <h2 className="text-xl font-bold text-[#3d0e15] font-ibm-plex hand-drawn-text mb-6 flex items-center">
-                  <Database className="mr-2 h-5 w-5 text-[#6e1d27]" />
-                  Connected Sources
-                </h2>
+              <h2 className="text-xl font-bold text-[#3d0e15] font-ibm-plex hand-drawn-text mb-6 flex items-center">
+                <Database className="mr-2 h-5 w-5 text-[#6e1d27]" />
+                Connected Sources
+              </h2>
 
-                <div className="space-y-4">
-                  {connectedSources.map((source, index) => (
+              <div className="space-y-4">
+                {connectedSources.map((source, index) => (
+                  <motion.div
+                    key={source.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, delay: index * 0.1 }}
+                    className="flex items-center space-x-3 p-3 rounded-lg bg-white/50 border border-[#6e1d27]/20 hand-drawn-border"
+                  >
+                    <source.icon 
+                      className="w-6 h-6" 
+                      style={{ color: source.color }}
+                    />
+                    <div className="flex-1">
+                      <p className="font-semibold text-[#3d0e15] font-ibm-plex">
+                        {source.name}
+                      </p>
+                      <p className="text-sm text-green-600 font-ibm-plex flex items-center">
+                        <CheckCircle className="w-3 h-3 mr-1" />
+                        Connected
+                      </p>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+
+              <div className="mt-6 p-4 bg-[#6e1d27]/5 rounded-lg border border-[#6e1d27]/20">
+                <h3 className="font-semibold text-[#3d0e15] font-ibm-plex mb-2 flex items-center">
+                  <Zap className="mr-2 h-4 w-4 text-[#6e1d27]" />
+                  Quick Actions
+                </h3>
+                <div className="space-y-2">
+                  <Button
+                    onClick={() => router.push('/onboarding')}
+                    variant="outline"
+                    size="sm"
+                    className="w-full justify-start text-xs hand-drawn-border border border-[#6e1d27]/30 text-[#6e1d27] hover:bg-[#6e1d27] hover:text-white font-ibm-plex"
+                  >
+                    Connect new source
+                  </Button>
+                  <Button
+                    onClick={() => router.push('/dashboard')}
+                    variant="outline"
+                    size="sm"
+                    className="w-full justify-start text-xs hand-drawn-border border border-[#6e1d27]/30 text-[#6e1d27] hover:bg-[#6e1d27] hover:text-white font-ibm-plex"
+                  >
+                    View import history
+                  </Button>
+                </div>
+              </div>
+
+              <div className="absolute bottom-2 left-2 w-6 h-3 opacity-20">
+                <svg viewBox="0 0 32 16" className="w-full h-full text-[#6e1d27]">
+                  <path d="M2 8 Q8 2 16 8 T30 8" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="hand-drawn-path" />
+                </svg>
+              </div>
+              <div className="absolute bottom-2 right-2 w-4 h-4 opacity-20">
+                <svg viewBox="0 0 24 24" className="w-full h-full text-[#6e1d27]">
+                  <path d="M12 2 L22 12 L12 22 L2 12 Z" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="hand-drawn-path" />
+                </svg>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Main Chat Area - Properly sized */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+            className="flex-1 h-full"
+          >
+            <div className="hand-drawn-container bg-white/60 backdrop-blur-sm relative h-full flex flex-col overflow-hidden">
+              {/* Decorative corner doodles */}
+              <div className="absolute top-2 left-2 w-4 h-4 opacity-30 z-10">
+                <svg viewBox="0 0 24 24" className="w-full h-full text-[#6e1d27]">
+                  <path d="M3 3 L21 3 L21 21 L3 21 Z" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="hand-drawn-path" />
+                </svg>
+              </div>
+              <div className="absolute top-2 right-2 w-4 h-4 opacity-30 z-10">
+                <svg viewBox="0 0 24 24" className="w-full h-full text-[#6e1d27]">
+                  <circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" strokeWidth="1.5" className="hand-drawn-path" />
+                </svg>
+              </div>
+
+              {/* Chat Header - Fixed */}
+              <div className="p-6 border-b border-[#6e1d27]/20 flex-shrink-0">
+                <h1 className="text-2xl font-bold text-[#3d0e15] font-ibm-plex hand-drawn-text flex items-center">
+                  <Bot className="mr-3 h-6 w-6 text-[#6e1d27]" />
+                  DatrixAI Assistant
+                </h1>
+                <p className="text-[#6e1d27] font-ibm-plex mt-1">
+                  Your intelligent data processing companion
+                </p>
+              </div>
+
+              {/* Messages Area - Scrollable with proper height */}
+              <div 
+                className="flex-1 overflow-y-auto p-6 space-y-4"
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                style={{ 
+                  scrollbarWidth: 'thin',
+                  scrollbarColor: '#6e1d27 transparent'
+                }}
+              >
+                <AnimatePresence>
+                  {messages.map((message, index) => (
                     <motion.div
-                      key={source.id}
+                      key={message.id}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.4, delay: index * 0.1 }}
-                      className="flex items-center space-x-3 p-3 rounded-lg bg-white/50 border border-[#6e1d27]/20 hand-drawn-border"
+                      transition={{ duration: 0.4, delay: index * 0.05 }}
+                      className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
                     >
-                      <source.icon 
-                        className="w-6 h-6" 
-                        style={{ color: source.color }}
-                      />
-                      <div className="flex-1">
-                        <p className="font-semibold text-[#3d0e15] font-ibm-plex">
-                          {source.name}
-                        </p>
-                        <p className="text-sm text-green-600 font-ibm-plex flex items-center">
-                          <CheckCircle className="w-3 h-3 mr-1" />
-                          Connected
-                        </p>
+                      <div className={`max-w-[80%] ${message.type === 'user' ? 'order-2' : 'order-1'}`}>
+                        <div className={`flex items-start space-x-3 ${message.type === 'user' ? 'flex-row-reverse space-x-reverse' : ''}`}>
+                          {/* Avatar */}
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                            message.type === 'user' 
+                              ? 'bg-[#6e1d27] text-white' 
+                              : message.type === 'ai'
+                              ? 'bg-[#6e1d27]/10 text-[#6e1d27]'
+                              : 'bg-yellow-100 text-yellow-600'
+                          }`}>
+                            {message.type === 'user' ? (
+                              <User className="w-4 h-4" />
+                            ) : message.type === 'ai' ? (
+                              <Bot className="w-4 h-4" />
+                            ) : (
+                              <AlertCircle className="w-4 h-4" />
+                            )}
+                          </div>
+
+                          {/* Message Content */}
+                          <div className={`flex-1 ${message.type === 'user' ? 'text-right' : 'text-left'}`}>
+                            <div className={`inline-block p-4 rounded-lg ${
+                              message.type === 'user'
+                                ? 'bg-[#6e1d27] text-white hand-drawn-border'
+                                : message.type === 'ai'
+                                ? 'bg-white border border-[#6e1d27]/20 text-[#3d0e15] hand-drawn-border'
+                                : 'bg-yellow-50 border border-yellow-200 text-yellow-800'
+                            }`}>
+                              {/* File attachment display */}
+                              {message.file && (
+                                <div className="mb-3 p-3 bg-white/50 rounded-lg border border-[#6e1d27]/20 flex items-center space-x-3">
+                                  {(() => {
+                                    const FileIcon = getFileIcon(message.file.type);
+                                    return <FileIcon className="w-5 h-5 text-[#6e1d27]" />;
+                                  })()}
+                                  <div className="flex-1">
+                                    <p className="font-semibold text-[#3d0e15] font-ibm-plex text-sm">
+                                      {message.file.name}
+                                    </p>
+                                    <p className="text-xs text-[#6e1d27] font-ibm-plex">
+                                      {formatFileSize(message.file.size)}
+                                    </p>
+                                  </div>
+                                </div>
+                              )}
+
+                              <p className="font-ibm-plex whitespace-pre-line">
+                                {message.content}
+                              </p>
+
+                              {/* Processing status */}
+                              {message.status === 'processing' && (
+                                <div className="mt-3 flex items-center space-x-2 text-blue-600">
+                                  <Clock className="w-4 h-4 animate-spin" />
+                                  <span className="text-sm font-ibm-plex">Processing...</span>
+                                </div>
+                              )}
+
+                              {/* Results display */}
+                              {message.results && (
+                                <div className="mt-3 p-3 bg-green-50 rounded-lg border border-green-200">
+                                  <div className="grid grid-cols-2 gap-2 text-sm font-ibm-plex">
+                                    <div>
+                                      <span className="text-green-600 font-semibold">Processed:</span>
+                                      <span className="ml-1 text-green-800">{message.results.processed} rows</span>
+                                    </div>
+                                    <div>
+                                      <span className="text-green-600 font-semibold">Added:</span>
+                                      <span className="ml-1 text-green-800">{message.results.added} records</span>
+                                    </div>
+                                    <div>
+                                      <span className="text-red-600 font-semibold">Errors:</span>
+                                      <span className="ml-1 text-red-800">{message.results.errors} rows</span>
+                                    </div>
+                                    <div>
+                                      <span className="text-blue-600 font-semibold">Destination:</span>
+                                      <span className="ml-1 text-blue-800">{message.results.destination}</span>
+                                    </div>
+                                  </div>
+                                  <Button
+                                    size="sm"
+                                    className="mt-2 hand-drawn-button bg-green-600 hover:bg-green-700 text-white font-ibm-plex"
+                                  >
+                                    <Download className="w-3 h-3 mr-1" />
+                                    Download Report
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                            <p className="text-xs text-[#6e1d27]/60 font-ibm-plex mt-1">
+                              {message.timestamp.toLocaleTimeString()}
+                            </p>
+                          </div>
+                        </div>
                       </div>
                     </motion.div>
                   ))}
-                </div>
-
-                <div className="mt-6 p-4 bg-[#6e1d27]/5 rounded-lg border border-[#6e1d27]/20">
-                  <h3 className="font-semibold text-[#3d0e15] font-ibm-plex mb-2 flex items-center">
-                    <Zap className="mr-2 h-4 w-4 text-[#6e1d27]" />
-                    Quick Actions
-                  </h3>
-                  <div className="space-y-2">
-                    <Button
-                      onClick={() => router.push('/onboarding')}
-                      variant="outline"
-                      size="sm"
-                      className="w-full justify-start text-xs hand-drawn-border border border-[#6e1d27]/30 text-[#6e1d27] hover:bg-[#6e1d27] hover:text-white font-ibm-plex"
-                    >
-                      Connect new source
-                    </Button>
-                    <Button
-                      onClick={() => router.push('/dashboard')}
-                      variant="outline"
-                      size="sm"
-                      className="w-full justify-start text-xs hand-drawn-border border border-[#6e1d27]/30 text-[#6e1d27] hover:bg-[#6e1d27] hover:text-white font-ibm-plex"
-                    >
-                      View import history
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="absolute bottom-2 left-2 w-6 h-3 opacity-20">
-                  <svg viewBox="0 0 32 16" className="w-full h-full text-[#6e1d27]">
-                    <path d="M2 8 Q8 2 16 8 T30 8" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="hand-drawn-path" />
-                  </svg>
-                </div>
-                <div className="absolute bottom-2 right-2 w-4 h-4 opacity-20">
-                  <svg viewBox="0 0 24 24" className="w-full h-full text-[#6e1d27]">
-                    <path d="M12 2 L22 12 L12 22 L2 12 Z" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="hand-drawn-path" />
-                  </svg>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Main Chat Area - Properly constrained height */}
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
-              className="flex-1 flex flex-col min-h-0"
-            >
-              <div className="hand-drawn-container bg-white/60 backdrop-blur-sm relative flex-1 flex flex-col min-h-0">
-                {/* Decorative corner doodles */}
-                <div className="absolute top-2 left-2 w-4 h-4 opacity-30 z-10">
-                  <svg viewBox="0 0 24 24" className="w-full h-full text-[#6e1d27]">
-                    <path d="M3 3 L21 3 L21 21 L3 21 Z" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="hand-drawn-path" />
-                  </svg>
-                </div>
-                <div className="absolute top-2 right-2 w-4 h-4 opacity-30 z-10">
-                  <svg viewBox="0 0 24 24" className="w-full h-full text-[#6e1d27]">
-                    <circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" strokeWidth="1.5" className="hand-drawn-path" />
-                  </svg>
-                </div>
-
-                {/* Chat Header - Fixed */}
-                <div className="p-6 border-b border-[#6e1d27]/20 flex-shrink-0">
-                  <h1 className="text-2xl font-bold text-[#3d0e15] font-ibm-plex hand-drawn-text flex items-center">
-                    <Bot className="mr-3 h-6 w-6 text-[#6e1d27]" />
-                    DatrixAI Assistant
-                  </h1>
-                  <p className="text-[#6e1d27] font-ibm-plex mt-1">
-                    Your intelligent data processing companion
-                  </p>
-                </div>
-
-                {/* Messages Area - Scrollable */}
-                <div 
-                  className="flex-1 overflow-y-auto p-6 space-y-4 min-h-0"
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                  onDrop={handleDrop}
-                  style={{ 
-                    scrollbarWidth: 'thin',
-                    scrollbarColor: '#6e1d27 transparent'
-                  }}
-                >
-                  <AnimatePresence>
-                    {messages.map((message, index) => (
-                      <motion.div
-                        key={message.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.4, delay: index * 0.05 }}
-                        className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
-                      >
-                        <div className={`max-w-[80%] ${message.type === 'user' ? 'order-2' : 'order-1'}`}>
-                          <div className={`flex items-start space-x-3 ${message.type === 'user' ? 'flex-row-reverse space-x-reverse' : ''}`}>
-                            {/* Avatar */}
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                              message.type === 'user' 
-                                ? 'bg-[#6e1d27] text-white' 
-                                : message.type === 'ai'
-                                ? 'bg-[#6e1d27]/10 text-[#6e1d27]'
-                                : 'bg-yellow-100 text-yellow-600'
-                            }`}>
-                              {message.type === 'user' ? (
-                                <User className="w-4 h-4" />
-                              ) : message.type === 'ai' ? (
-                                <Bot className="w-4 h-4" />
-                              ) : (
-                                <AlertCircle className="w-4 h-4" />
-                              )}
-                            </div>
-
-                            {/* Message Content */}
-                            <div className={`flex-1 ${message.type === 'user' ? 'text-right' : 'text-left'}`}>
-                              <div className={`inline-block p-4 rounded-lg ${
-                                message.type === 'user'
-                                  ? 'bg-[#6e1d27] text-white hand-drawn-border'
-                                  : message.type === 'ai'
-                                  ? 'bg-white border border-[#6e1d27]/20 text-[#3d0e15] hand-drawn-border'
-                                  : 'bg-yellow-50 border border-yellow-200 text-yellow-800'
-                              }`}>
-                                {/* File attachment display */}
-                                {message.file && (
-                                  <div className="mb-3 p-3 bg-white/50 rounded-lg border border-[#6e1d27]/20 flex items-center space-x-3">
-                                    {(() => {
-                                      const FileIcon = getFileIcon(message.file.type);
-                                      return <FileIcon className="w-5 h-5 text-[#6e1d27]" />;
-                                    })()}
-                                    <div className="flex-1">
-                                      <p className="font-semibold text-[#3d0e15] font-ibm-plex text-sm">
-                                        {message.file.name}
-                                      </p>
-                                      <p className="text-xs text-[#6e1d27] font-ibm-plex">
-                                        {formatFileSize(message.file.size)}
-                                      </p>
-                                    </div>
-                                  </div>
-                                )}
-
-                                <p className="font-ibm-plex whitespace-pre-line">
-                                  {message.content}
-                                </p>
-
-                                {/* Processing status */}
-                                {message.status === 'processing' && (
-                                  <div className="mt-3 flex items-center space-x-2 text-blue-600">
-                                    <Clock className="w-4 h-4 animate-spin" />
-                                    <span className="text-sm font-ibm-plex">Processing...</span>
-                                  </div>
-                                )}
-
-                                {/* Results display */}
-                                {message.results && (
-                                  <div className="mt-3 p-3 bg-green-50 rounded-lg border border-green-200">
-                                    <div className="grid grid-cols-2 gap-2 text-sm font-ibm-plex">
-                                      <div>
-                                        <span className="text-green-600 font-semibold">Processed:</span>
-                                        <span className="ml-1 text-green-800">{message.results.processed} rows</span>
-                                      </div>
-                                      <div>
-                                        <span className="text-green-600 font-semibold">Added:</span>
-                                        <span className="ml-1 text-green-800">{message.results.added} records</span>
-                                      </div>
-                                      <div>
-                                        <span className="text-red-600 font-semibold">Errors:</span>
-                                        <span className="ml-1 text-red-800">{message.results.errors} rows</span>
-                                      </div>
-                                      <div>
-                                        <span className="text-blue-600 font-semibold">Destination:</span>
-                                        <span className="ml-1 text-blue-800">{message.results.destination}</span>
-                                      </div>
-                                    </div>
-                                    <Button
-                                      size="sm"
-                                      className="mt-2 hand-drawn-button bg-green-600 hover:bg-green-700 text-white font-ibm-plex"
-                                    >
-                                      <Download className="w-3 h-3 mr-1" />
-                                      Download Report
-                                    </Button>
-                                  </div>
-                                )}
-                              </div>
-                              <p className="text-xs text-[#6e1d27]/60 font-ibm-plex mt-1">
-                                {message.timestamp.toLocaleTimeString()}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      </motion.div>
-                    ))}
-                  </AnimatePresence>
-
-                  {/* Processing indicator */}
-                  {isProcessing && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="flex justify-start"
-                    >
-                      <div className="flex items-start space-x-3">
-                        <div className="w-8 h-8 rounded-full bg-[#6e1d27]/10 text-[#6e1d27] flex items-center justify-center flex-shrink-0">
-                          <Bot className="w-4 h-4" />
-                        </div>
-                        <div className="bg-white border border-[#6e1d27]/20 text-[#3d0e15] p-4 rounded-lg hand-drawn-border">
-                          <div className="flex items-center space-x-2">
-                            <div className="flex space-x-1">
-                              <div className="w-2 h-2 bg-[#6e1d27] rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                              <div className="w-2 h-2 bg-[#6e1d27] rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                              <div className="w-2 h-2 bg-[#6e1d27] rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-                            </div>
-                            <span className="text-sm text-[#6e1d27] font-ibm-plex">DatrixAI is thinking...</span>
-                          </div>
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-
-                  <div ref={messagesEndRef} />
-                </div>
-
-                {/* Drag & Drop Overlay */}
-                <AnimatePresence>
-                  {isDragging && (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      className="absolute inset-0 bg-[#6e1d27]/10 backdrop-blur-sm flex items-center justify-center z-20"
-                    >
-                      <div className="text-center p-8 bg-white/80 rounded-lg border-2 border-dashed border-[#6e1d27] hand-drawn-border">
-                        <Upload className="w-12 h-12 text-[#6e1d27] mx-auto mb-4" />
-                        <h3 className="text-xl font-bold text-[#3d0e15] font-ibm-plex mb-2">
-                          Drop your file here
-                        </h3>
-                        <p className="text-[#6e1d27] font-ibm-plex">
-                          I'll process it and help you organize the data
-                        </p>
-                      </div>
-                    </motion.div>
-                  )}
                 </AnimatePresence>
 
-                {/* Input Area - Fixed at bottom */}
-                <div className="p-6 border-t border-[#6e1d27]/20 flex-shrink-0">
-                  <div className="flex items-end space-x-3">
-                    <div className="flex-1">
-                      <div className="relative">
-                        <Input
-                          value={inputText}
-                          onChange={(e) => setInputText(e.target.value)}
-                          onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                          placeholder="Type your message or upload a file..."
-                          className="hand-drawn-input bg-white/80 border-2 border-[#6e1d27] text-[#3d0e15] placeholder-[#6e1d27]/60 font-ibm-plex pr-12"
-                          disabled={isProcessing}
-                        />
-                        <Button
-                          onClick={() => fileInputRef.current?.click()}
-                          variant="ghost"
-                          size="sm"
-                          className="absolute right-2 top-1/2 transform -translate-y-1/2 text-[#6e1d27] hover:text-[#3d0e15] hover:bg-[#6e1d27]/10"
-                          disabled={isProcessing}
-                        >
-                          <Paperclip className="w-4 h-4" />
-                        </Button>
+                {/* Processing indicator */}
+                {isProcessing && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex justify-start"
+                  >
+                    <div className="flex items-start space-x-3">
+                      <div className="w-8 h-8 rounded-full bg-[#6e1d27]/10 text-[#6e1d27] flex items-center justify-center flex-shrink-0">
+                        <Bot className="w-4 h-4" />
+                      </div>
+                      <div className="bg-white border border-[#6e1d27]/20 text-[#3d0e15] p-4 rounded-lg hand-drawn-border">
+                        <div className="flex items-center space-x-2">
+                          <div className="flex space-x-1">
+                            <div className="w-2 h-2 bg-[#6e1d27] rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                            <div className="w-2 h-2 bg-[#6e1d27] rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                            <div className="w-2 h-2 bg-[#6e1d27] rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                          </div>
+                          <span className="text-sm text-[#6e1d27] font-ibm-plex">DatrixAI is thinking...</span>
+                        </div>
                       </div>
                     </div>
-                    <Button
-                      onClick={handleSendMessage}
-                      disabled={!inputText.trim() || isProcessing}
-                      className="hand-drawn-button bg-[#6e1d27] hover:bg-[#912d3c] text-white font-ibm-plex disabled:opacity-50"
-                    >
-                      <Send className="w-4 h-4" />
-                    </Button>
-                  </div>
+                  </motion.div>
+                )}
 
-                  {/* File input */}
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".csv,.xlsx,.xls,.pdf"
-                    onChange={(e) => handleFileUpload(e.target.files)}
-                    className="hidden"
-                  />
-
-                  <p className="text-xs text-[#6e1d27]/60 font-ibm-plex mt-2 text-center">
-                    Supported formats: CSV, Excel, PDF • Max size: 10MB
-                  </p>
-                </div>
-
-                {/* Bottom decorative doodles */}
-                <div className="absolute bottom-2 left-2 w-6 h-3 opacity-20 z-10">
-                  <svg viewBox="0 0 32 16" className="w-full h-full text-[#6e1d27]">
-                    <path d="M2 8 Q8 2 16 8 T30 8" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="hand-drawn-path" />
-                  </svg>
-                </div>
-                <div className="absolute bottom-2 right-2 w-4 h-4 opacity-20 z-10">
-                  <svg viewBox="0 0 24 24" className="w-full h-full text-[#6e1d27]">
-                    <path d="M12 2 L22 12 L12 22 L2 12 Z" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="hand-drawn-path" />
-                  </svg>
-                </div>
+                <div ref={messagesEndRef} />
               </div>
-            </motion.div>
-          </div>
+
+              {/* Drag & Drop Overlay */}
+              <AnimatePresence>
+                {isDragging && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="absolute inset-0 bg-[#6e1d27]/10 backdrop-blur-sm flex items-center justify-center z-20"
+                  >
+                    <div className="text-center p-8 bg-white/80 rounded-lg border-2 border-dashed border-[#6e1d27] hand-drawn-border">
+                      <Upload className="w-12 h-12 text-[#6e1d27] mx-auto mb-4" />
+                      <h3 className="text-xl font-bold text-[#3d0e15] font-ibm-plex mb-2">
+                        Drop your file here
+                      </h3>
+                      <p className="text-[#6e1d27] font-ibm-plex">
+                        I'll process it and help you organize the data
+                      </p>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Input Area - Fixed at bottom */}
+              <div className="p-6 border-t border-[#6e1d27]/20 flex-shrink-0">
+                <div className="flex items-end space-x-3">
+                  <div className="flex-1">
+                    <div className="relative">
+                      <Input
+                        value={inputText}
+                        onChange={(e) => setInputText(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                        placeholder="Type your message or upload a file..."
+                        className="hand-drawn-input bg-white/80 border-2 border-[#6e1d27] text-[#3d0e15] placeholder-[#6e1d27]/60 font-ibm-plex pr-12"
+                        disabled={isProcessing}
+                      />
+                      <Button
+                        onClick={() => fileInputRef.current?.click()}
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-2 top-1/2 transform -translate-y-1/2 text-[#6e1d27] hover:text-[#3d0e15] hover:bg-[#6e1d27]/10"
+                        disabled={isProcessing}
+                      >
+                        <Paperclip className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={handleSendMessage}
+                    disabled={!inputText.trim() || isProcessing}
+                    className="hand-drawn-button bg-[#6e1d27] hover:bg-[#912d3c] text-white font-ibm-plex disabled:opacity-50"
+                  >
+                    <Send className="w-4 h-4" />
+                  </Button>
+                </div>
+
+                {/* File input */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".csv,.xlsx,.xls,.pdf"
+                  onChange={(e) => handleFileUpload(e.target.files)}
+                  className="hidden"
+                />
+
+                <p className="text-xs text-[#6e1d27]/60 font-ibm-plex mt-2 text-center">
+                  Supported formats: CSV, Excel, PDF • Max size: 10MB
+                </p>
+              </div>
+
+              {/* Bottom decorative doodles */}
+              <div className="absolute bottom-2 left-2 w-6 h-3 opacity-20 z-10">
+                <svg viewBox="0 0 32 16" className="w-full h-full text-[#6e1d27]">
+                  <path d="M2 8 Q8 2 16 8 T30 8" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="hand-drawn-path" />
+                </svg>
+              </div>
+              <div className="absolute bottom-2 right-2 w-4 h-4 opacity-20 z-10">
+                <svg viewBox="0 0 24 24" className="w-full h-full text-[#6e1d27]">
+                  <path d="M12 2 L22 12 L12 22 L2 12 Z" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="hand-drawn-path" />
+                </svg>
+              </div>
+            </div>
+          </motion.div>
         </div>
       </div>
 
