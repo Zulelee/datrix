@@ -32,6 +32,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
+import { OnboardingNavbar } from '@/components/Navbar';
 
 interface DataSource {
   id: string;
@@ -219,59 +220,7 @@ export default function OnboardingPage() {
       </div>
 
       {/* Navbar for Signed-in Users */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-transparent">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo and Brand */}
-            <div className="flex items-center space-x-3">
-              <div className="relative w-10 h-10 rounded-lg overflow-hidden bg-gradient-to-br from-[#b6454e] to-[#6e1d27] p-1 shadow-lg">
-                <div className="w-full h-full bg-[#f9efe8] rounded-md flex items-center justify-center">
-                  <span className="text-[#6e1d27] font-bold text-lg">D</span>
-                </div>
-              </div>
-              <span className="text-[#3d0e15] text-xl font-bold tracking-wide font-ibm-plex">
-                Datrix
-              </span>
-            </div>
-
-            {/* Navigation Icons */}
-            <div className="flex items-center space-x-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => router.push('/dashboard')}
-                className="hand-drawn-border bg-transparent backdrop-blur-sm border-2 border-[#6e1d27] text-[#6e1d27] hover:bg-[#6e1d27] hover:text-white transition-all duration-300 font-ibm-plex p-2"
-              >
-                <BarChart3 className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => router.push('/')}
-                className="hand-drawn-border bg-transparent backdrop-blur-sm border-2 border-[#6e1d27] text-[#6e1d27] hover:bg-[#6e1d27] hover:text-white transition-all duration-300 font-ibm-plex p-2"
-              >
-                <Home className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => router.push('/chat')}
-                className="hand-drawn-border bg-transparent backdrop-blur-sm border-2 border-[#6e1d27] text-[#6e1d27] hover:bg-[#6e1d27] hover:text-white transition-all duration-300 font-ibm-plex p-2"
-              >
-                <MessageSquare className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={logout}
-                className="hand-drawn-border bg-transparent backdrop-blur-sm border-2 border-[#6e1d27] text-[#6e1d27] hover:bg-[#6e1d27] hover:text-white transition-all duration-300 font-ibm-plex p-2"
-              >
-                <LogOut className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <OnboardingNavbar onLogout={logout} />
 
       {/* Confetti Effect */}
       <AnimatePresence>

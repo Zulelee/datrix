@@ -55,7 +55,7 @@ export default function AuthPage() {
       if (error) {
         setError(error.message);
       } else {
-        router.push('/');
+        router.push('/onboarding');
       }
     } else {
       // Signup
@@ -68,7 +68,7 @@ export default function AuthPage() {
       const { error } = await supabase.auth.signUp({
         email,
         password,
-        options: { data: { name } }
+        options: { data: { name } , emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/onboarding`}
       });
       if (error) {
         setError(error.message);
