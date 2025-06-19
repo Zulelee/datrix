@@ -33,6 +33,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import { OnboardingNavbar } from '@/components/Navbar';
+import { saveUserDataSource, getUserDataSources, deleteUserDataSource } from '@/lib/saveDataSource';
 
 interface DataSource {
   id: string;
@@ -41,6 +42,7 @@ interface DataSource {
   description: string;
   connected: boolean;
   color: string;
+  credentials?: any;
 }
 
 export default function OnboardingPage() {
@@ -121,6 +123,7 @@ export default function OnboardingPage() {
   ]);
   const [selectedModal, setSelectedModal] = useState<string | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [modalInputs, setModalInputs] = useState<{[key: string]: string}>({});
 
   const router = useRouter();
 
@@ -140,6 +143,21 @@ export default function OnboardingPage() {
     setMounted(true);
     checkUser();
   }, []);
+
+  useEffect(() => {
+    if (user) {
+      getUserDataSources(user.id).then(({ data }) => {
+        setDataSources(prev =>
+          prev.map(ds => {
+            const found = data?.find((row: any) => row.source_type === ds.id);
+            return found
+              ? { ...ds, connected: true, credentials: found.credentials }
+              : { ...ds, connected: false, credentials: undefined };
+          })
+        );
+      });
+    }
+  }, [user]);
 
   const checkUser = async () => {
     const { data, error } = await supabase.auth.getUser();
@@ -162,7 +180,23 @@ export default function OnboardingPage() {
     }));
   };
 
-  const connectDataSource = (sourceId: string) => {
+  const connectDataSource = async (sourceId: string) => {
+    let credentials: any = {};
+    if (sourceId === 'airtable') {
+      credentials = {
+        apiKey: modalInputs.apiKey,
+        baseId: modalInputs.baseId,
+      };
+    } else if (sourceId === 'postgres') {
+      credentials = {
+        connectionString: modalInputs.connectionString,
+      };
+    }
+    const { error } = await saveUserDataSource(user.id, sourceId as "airtable" | "postgres", credentials);
+    if (error) {
+      alert("Failed to save credentials: " + error.message);
+      return;
+    }
     setDataSources(prev => 
       prev.map(source => 
         source.id === sourceId 
@@ -171,6 +205,7 @@ export default function OnboardingPage() {
       )
     );
     setSelectedModal(null);
+    setModalInputs({});
     
     // Show brief success animation
     setTimeout(() => {
@@ -204,6 +239,16 @@ export default function OnboardingPage() {
   };
 
   const connectedCount = dataSources.filter(source => source.connected).length;
+
+  const handleDeleteIntegration = async (sourceId: 'airtable' | 'postgres') => {
+    await deleteUserDataSource(user.id, sourceId);
+    setDataSources(prev => prev.map(source => source.id === sourceId ? { ...source, connected: false } : source));
+  };
+
+  const openEditModal = (sourceId: string, credentials: any) => {
+    setSelectedModal(sourceId);
+    setModalInputs(credentials);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#f9efe8] via-[#f5e6d3] to-[#f0dcc4] relative overflow-hidden">
@@ -524,15 +569,18 @@ export default function OnboardingPage() {
                           <span className="font-semibold text-[#3d0e15] font-ibm-plex">
                             {source.name}
                           </span>
-                          {source.connected && (
-                            <CheckCircle className="w-5 h-5 text-green-500 ml-auto" />
-                          )}
+                          {/* {source.connected && (
+                            // <>
+                            //   <Button onClick={() => openEditModal(source.id, source.credentials)}>Edit</Button>
+                            //   <Button onClick={() => handleDeleteIntegration(source.id as 'airtable' | 'postgres')}>Delete</Button>
+                            // </>
+                          )} */}
                         </div>
                         <p className="text-sm text-[#6e1d27] font-ibm-plex mb-3">
                           {source.description}
                         </p>
                         <Button
-                          onClick={() => source.connected ? null : setSelectedModal(source.id)}
+                          onClick={() => { setSelectedModal(source.id); setModalInputs({}); }}
                           disabled={source.connected}
                           className={`w-full text-sm font-ibm-plex ${
                             source.connected
@@ -655,52 +703,64 @@ export default function OnboardingPage() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-            onClick={() => setSelectedModal(null)}
+            onClick={() => { setSelectedModal(null); setModalInputs({}); }}
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               className="bg-white rounded-lg p-6 max-w-md w-full hand-drawn-container"
-              onClick={(e) => e.stopPropagation()}
+              onClick={e => e.stopPropagation()}
             >
               {(() => {
-                const source = dataSources.find(s => s.id === selectedModal);
-                if (!source) return null;
+                const integration = dataSources.find(s => s.id === selectedModal);
+                if (!integration) return null;
                 
                 return (
                   <div className="space-y-4">
                     <div className="flex items-center space-x-3 mb-4">
-                      <source.icon className="w-8 h-8" style={{ color: source.color }} />
+                      <integration.icon className="w-8 h-8" style={{ color: integration.color }} />
                       <h3 className="text-xl font-bold text-[#3d0e15] font-ibm-plex">
-                        Connect {source.name}
+                        {integration.connected ? 'Edit' : 'Connect'} {integration.name}
                       </h3>
                     </div>
                     
                     <p className="text-[#6e1d27] font-ibm-plex">
-                      {source.id === 'airtable' && "Enter your Airtable API key and base ID to connect your tables."}
-                      {source.id === 'postgres' && "Provide your PostgreSQL connection string to access your database."}
-                      {source.id === 'email' && "Connect your email account to analyze your communications."}
-                      {source.id === 'sheets' && "Authorize access to your Google Sheets for data import."}
-                      {source.id === 'notion' && "Connect your Notion workspace to import your pages and databases."}
-                      {source.id === 'slack' && "Connect your Slack workspace to analyze team communications."}
-                      {source.id === 'calendar' && "Connect your Google Calendar to analyze your schedule data."}
-                      {source.id === 'api' && "Configure your custom API endpoint and authentication."}
+                      {integration.id === 'airtable' && "Enter your Airtable API key and base ID to connect your tables."}
+                      {integration.id === 'postgres' && "Provide your PostgreSQL connection string to access your database."}
+                      {integration.id === 'email' && "Connect your email account to analyze your communications."}
+                      {integration.id === 'sheets' && "Authorize access to your Google Sheets for data import."}
+                      {integration.id === 'notion' && "Connect your Notion workspace to import your pages and databases."}
+                      {integration.id === 'slack' && "Connect your Slack workspace to analyze team communications."}
+                      {integration.id === 'calendar' && "Connect your Google Calendar to analyze your schedule data."}
+                      {integration.id === 'api' && "Configure your custom API endpoint and authentication."}
                     </p>
 
                     <div className="space-y-3">
-                      <Input
-                        placeholder={
-                          source.id === 'airtable' ? "API Key" :
-                          source.id === 'postgres' ? "Connection String" :
-                          source.id === 'api' ? "API Endpoint" :
-                          "Configuration"
-                        }
-                        className="hand-drawn-input bg-white border-2 border-[#6e1d27] font-ibm-plex"
-                      />
-                      {(source.id === 'airtable' || source.id === 'api') && (
+                      {/* For Airtable */}
+                      {integration.id === 'airtable' && (
+                        <>
+                          <Input
+                            value={modalInputs.apiKey || ''}
+                            onChange={e => setModalInputs(inputs => ({ ...inputs, apiKey: e.target.value }))}
+                            placeholder="API Key"
+                            className="hand-drawn-input bg-white border-2 border-[#6e1d27] font-ibm-plex"
+                          />
+                          <Input
+                            value={modalInputs.baseId || ''}
+                            onChange={e => setModalInputs(inputs => ({ ...inputs, baseId: e.target.value }))}
+                            placeholder="Base ID"
+                            className="hand-drawn-input bg-white border-2 border-[#6e1d27] font-ibm-plex"
+                          />
+                        </>
+                      )}
+
+                      {/* For PostgreSQL */}
+                      {integration.id === 'postgres' && (
                         <Input
-                          placeholder={source.id === 'airtable' ? "Base ID" : "API Key"}
+                          value={modalInputs.connectionString || ''}
+                          onChange={e => setModalInputs(inputs => ({ ...inputs, connectionString: e.target.value }))}
+                          placeholder="Connection String"
                           className="hand-drawn-input bg-white border-2 border-[#6e1d27] font-ibm-plex"
                         />
                       )}
@@ -708,14 +768,14 @@ export default function OnboardingPage() {
 
                     <div className="flex space-x-3 pt-4">
                       <Button
-                        onClick={() => setSelectedModal(null)}
+                        onClick={() => { setSelectedModal(null); setModalInputs({}); }}
                         variant="outline"
                         className="flex-1 hand-drawn-border border-2 border-[#6e1d27] text-[#6e1d27] hover:bg-[#6e1d27] hover:text-white font-ibm-plex"
                       >
                         Cancel
                       </Button>
                       <Button
-                        onClick={() => connectDataSource(source.id)}
+                        onClick={() => connectDataSource(integration.id)}
                         className="flex-1 hand-drawn-button bg-[#6e1d27] hover:bg-[#912d3c] text-white font-ibm-plex"
                       >
                         Connect
