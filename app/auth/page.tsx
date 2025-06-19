@@ -31,6 +31,20 @@ export default function AuthPage() {
     setMounted(true);
   }, []);
 
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data, error } = await supabase.auth.getUser();
+      if (data?.user) {
+        // Optionally, check if user is new by looking for a profile row or metadata
+        // If new, show onboarding; if not, redirect to dashboard
+      } else {
+        router.push('/auth');
+      }
+      setLoading(false);
+    };
+    checkUser();
+  }, []);
+
   if (!mounted) {
     return null;
   }
@@ -281,6 +295,12 @@ export default function AuthPage() {
                 )}
               </AnimatePresence>
 
+              <div className="flex items-center my-4">
+                <div className="flex-grow border-t border-[#6e1d27]/30"></div>
+                <span className="mx-2 text-[#6e1d27] font-ibm-plex text-xs">or</span>
+                <div className="flex-grow border-t border-[#6e1d27]/30"></div>
+              </div>
+
               {/* Submit Button */}
               <motion.div
                 whileHover={{ scale: 1.02 }}
@@ -310,6 +330,26 @@ export default function AuthPage() {
               {error && (
                 <div className="text-red-600 text-sm text-center">{error}</div>
               )}
+
+              <Button
+                type="button"
+                onClick={async () => {
+                  setLoading(true);
+                  setError(null);
+                  const { error } = await supabase.auth.signInWithOAuth({
+                    provider: 'google',
+                    options: {
+                      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/onboarding`
+                    }
+                  });
+                  if (error) setError(error.message);
+                  setLoading(false);
+                }}
+                className="w-full hand-drawn-button bg-[#4285F4] hover:bg-[#357ae8] text-white py-2 sm:py-3 text-base sm:text-lg font-semibold font-ibm-plex transition-all duration-300 transform hover:scale-105 h-10 sm:h-12 mt-2 flex items-center justify-center"
+              >
+                <svg className="inline-block mr-2" width="20" height="20" viewBox="0 0 48 48"><g><path fill="#4285F4" d="M24 9.5c3.54 0 6.73 1.22 9.23 3.23l6.9-6.9C36.13 2.36 30.4 0 24 0 14.82 0 6.73 5.08 2.69 12.44l8.1 6.29C12.6 13.13 17.88 9.5 24 9.5z"/><path fill="#34A853" d="M46.1 24.5c0-1.64-.15-3.22-.43-4.74H24v9.01h12.44c-.54 2.9-2.18 5.36-4.64 7.01l7.1 5.53C43.98 37.13 46.1 31.3 46.1 24.5z"/><path fill="#FBBC05" d="M10.79 28.73A14.5 14.5 0 0 1 9.5 24c0-1.64.28-3.23.79-4.73l-8.1-6.29A23.94 23.94 0 0 0 0 24c0 3.77.9 7.34 2.69 10.56l8.1-6.29z"/><path fill="#EA4335" d="M24 48c6.4 0 12.13-2.12 16.53-5.77l-7.1-5.53c-2.01 1.35-4.6 2.15-7.43 2.15-6.12 0-11.3-4.13-13.16-9.72l-8.1 6.29C6.73 42.92 14.82 48 24 48z"/></g></svg>
+                {isLogin ? 'Sign in with Google' : 'Sign up with Google'}
+              </Button>
             </form>
 
             {/* Toggle between login/signup */}
