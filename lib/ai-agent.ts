@@ -20,8 +20,8 @@ const EmailProcessingDecisionSchema = z.object({
   ]).describe('Category of the email'),
   priority: z.enum(['high', 'medium', 'low']).describe('Priority level for processing'),
   extractedData: z.object({
-    sender: z.string().optional().describe('Sender information'),
-    subject: z.string().optional().describe('Email subject'),
+    sender: z.string().describe('Sender information'),
+    subject: z.string().describe('Email subject'),
     keyTopics: z.array(z.string()).describe('Key topics or keywords identified'),
     sentiment: z.enum(['positive', 'neutral', 'negative']).describe('Overall sentiment'),
     hasAttachments: z.boolean().describe('Whether email has attachments'),
@@ -71,11 +71,24 @@ Analyze this email data and provide:
 5. Priority level for processing
 6. Extracted structured data including key topics, sentiment, and urgency indicators
 
+IMPORTANT: Make sure to provide ALL required fields in extractedData:
+- sender: The email sender (required)
+- subject: The email subject (required)
+- keyTopics: Array of key topics found
+- sentiment: positive, neutral, or negative
+- hasAttachments: true/false
+- urgencyIndicators: Array of urgent phrases found
+
 Be thorough but concise in your analysis. Focus on business value and data quality.
         `,
       });
 
-      console.log('🎯 AI Decision:', object);
+      console.log('🎯 AI Decision:', object.shouldProcess);
+      console.log('🎯 Confidence:', object.confidence);
+      console.log('📂 Category:', object.category);
+      console.log('⚡ Priority:', object.priority);
+      console.log('💭 Reasoning:', object.reasoning);
+      console.log('📊 Extracted Data:', JSON.stringify(object.extractedData, null, 2));
       console.log('============================\n');
 
       return object;
@@ -144,6 +157,9 @@ Be thorough but concise in your analysis. Focus on business value and data quali
     const shouldStore = decision.shouldProcess || 
                        decision.confidence > 0.7 || 
                        decision.category === 'business_inquiry';
+
+    console.log('🔄 Next Actions:', nextActions);
+    console.log('💾 Should Store:', shouldStore);
 
     return {
       decision,
