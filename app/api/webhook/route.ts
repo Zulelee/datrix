@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { emailAgent } from '@/lib/ai-agent';
 
 export async function POST(request: NextRequest) {
   try {
@@ -42,16 +43,100 @@ export async function POST(request: NextRequest) {
     console.log('📄 Body:', JSON.stringify(webhookData.body, null, 2));
     console.log('==================\n');
 
-    // Return success response
-    return NextResponse.json({
+    // Check if this is email data and process with AI agent
+    let aiAnalysis = null;
+    let processingResult = null;
+
+    // Detect if the webhook contains email data
+    const isEmailData = body.type === 'email' || 
+                       body.event === 'email_received' ||
+                       body.subject || 
+                       body.from || 
+                       body.sender ||
+                       body.email_data ||
+                       (body.data && (body.data.subject || body.data.from || body.data.sender));
+
+    if (isEmailData) {
+      console.log('\n📧 EMAIL DATA DETECTED - ACTIVATING AI AGENT');
+      console.log('=============================================');
+      
+      try {
+        // Extract email data from various possible structures
+        const emailData = body.email_data || body.data || body;
+        
+        // Process with AI agent
+        processingResult = await emailAgent.processEmailDecision(emailData);
+        aiAnalysis = processingResult.decision;
+
+        console.log('🤖 AI ANALYSIS COMPLETE');
+        console.log('=======================');
+        console.log('✅ Should Process:', aiAnalysis.shouldProcess);
+        console.log('🎯 Confidence:', aiAnalysis.confidence);
+        console.log('📂 Category:', aiAnalysis.category);
+        console.log('⚡ Priority:', aiAnalysis.priority);
+        console.log('💭 Reasoning:', aiAnalysis.reasoning);
+        console.log('📊 Extracted Data:', JSON.stringify(aiAnalysis.extractedData, null, 2));
+        console.log('🔄 Next Actions:', processingResult.nextActions);
+        console.log('💾 Should Store:', processingResult.shouldStore);
+        console.log('=======================\n');
+
+        // Execute next actions based on AI decision
+        if (aiAnalysis.shouldProcess) {
+          console.log('🚀 EXECUTING PROCESSING ACTIONS');
+          console.log('===============================');
+          
+          for (const action of processingResult.nextActions) {
+            console.log(`📋 Action: ${action}`);
+            // Here you would implement actual processing logic
+            // For now, we're just logging the actions
+          }
+          
+          console.log('===============================\n');
+        } else {
+          console.log('⏸️  EMAIL PROCESSING SKIPPED');
+          console.log('============================');
+          console.log('📝 Reason:', aiAnalysis.reasoning);
+          console.log('============================\n');
+        }
+
+      } catch (aiError) {
+        console.error('❌ AI AGENT ERROR:', aiError);
+        aiAnalysis = {
+          error: 'AI processing failed',
+          message: aiError instanceof Error ? aiError.message : 'Unknown AI error'
+        };
+      }
+    }
+
+    // Return success response with AI analysis if available
+    const response = {
       success: true,
       message: 'Webhook received successfully',
       timestamp: webhookData.timestamp,
       dataReceived: {
         bodySize: webhookData.bodySize,
-        hasData: Object.keys(body).length > 0
-      }
-    }, { status: 200 });
+        hasData: Object.keys(body).length > 0,
+        isEmailData: isEmailData
+      },
+      ...(aiAnalysis && {
+        aiAnalysis: {
+          shouldProcess: aiAnalysis.shouldProcess,
+          confidence: aiAnalysis.confidence,
+          category: aiAnalysis.category,
+          priority: aiAnalysis.priority,
+          reasoning: aiAnalysis.reasoning,
+          extractedData: aiAnalysis.extractedData
+        }
+      }),
+      ...(processingResult && {
+        processing: {
+          nextActions: processingResult.nextActions,
+          shouldStore: processingResult.shouldStore
+        }
+      })
+    };
+
+    return NextResponse.json(response, { status: 200 });
 
   } catch (error) {
     console.error('❌ WEBHOOK ERROR');
@@ -85,11 +170,20 @@ export async function GET(request: NextRequest) {
   }
 
   return NextResponse.json({
-    message: 'Webhook endpoint is active',
+    message: 'Webhook endpoint is active with AI email processing',
     timestamp: new Date().toISOString(),
     methods: ['GET', 'POST'],
+    features: {
+      aiEmailProcessing: true,
+      supportedEmailFormats: [
+        'type: "email"',
+        'event: "email_received"',
+        'email_data: {...}',
+        'data: { subject, from, sender, ... }'
+      ]
+    },
     usage: {
-      POST: 'Send webhook data',
+      POST: 'Send webhook data (email data will be processed by AI)',
       GET: 'Verify webhook or get status'
     }
   });
