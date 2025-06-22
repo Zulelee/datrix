@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { BarChart3, Home, MessageSquare, LogOut, User } from 'lucide-react';
+import { BarChart3, Home, MessageSquare, LogOut, User, Webhook } from 'lucide-react';
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
@@ -102,6 +102,14 @@ export function OnboardingNavbar({ onLogout }: { onLogout: () => void }) {
               className="hand-drawn-border bg-transparent backdrop-blur-sm border-2 border-[#6e1d27] text-[#6e1d27] hover:bg-[#6e1d27] hover:text-white transition-all duration-300 font-ibm-plex p-2"
             >
               <MessageSquare className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => router.push('/webhook-test')}
+              className="hand-drawn-border bg-transparent backdrop-blur-sm border-2 border-[#6e1d27] text-[#6e1d27] hover:bg-[#6e1d27] hover:text-white transition-all duration-300 font-ibm-plex p-2"
+            >
+              <Webhook className="h-4 w-4" />
             </Button>
             <Button
               variant="ghost"
