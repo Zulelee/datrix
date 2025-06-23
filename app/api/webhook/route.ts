@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { emailAgent } from '@/lib/ai-agent';
+import { integrationAgent } from '@/lib/integration-agent';
 
 export async function POST(request: NextRequest) {
   try {
@@ -47,6 +48,7 @@ export async function POST(request: NextRequest) {
     let aiAnalysis = null;
     let processingResult = null;
     let documentProcessingResult = null;
+    let integrationResult = null;
 
     // Detect if the webhook contains email data
     const isEmailData = body.type === 'email' || 
@@ -94,6 +96,52 @@ export async function POST(request: NextRequest) {
             console.log('📤 Sent to:', 'http://0.0.0.0:8080/test/process-document');
             console.log('📊 Response:', JSON.stringify(documentProcessingResult, null, 2));
             console.log('==============================\n');
+
+            // Now send the document processing result to the integration agent
+            if (documentProcessingResult.status === 200 && documentProcessingResult.data) {
+              console.log('🔗 SENDING TO INTEGRATION AGENT');
+              console.log('===============================');
+              
+              try {
+                // For demo purposes, we'll use a mock user ID
+                // In production, you'd extract this from authentication headers or the request
+                const userId = 'demo-user-123';
+                
+                integrationResult = await integrationAgent.processDocumentData(
+                  documentProcessingResult.data, 
+                  userId
+                );
+                
+                console.log('✅ INTEGRATION PROCESSING COMPLETE');
+                console.log('==================================');
+                console.log('🔌 Integration:', integrationResult.selectedIntegration);
+                console.log('📋 Table:', integrationResult.tableName);
+                console.log('✅ Status:', integrationResult.status);
+                console.log('📝 Explanation:', integrationResult.explanation);
+                console.log('==================================\n');
+                
+              } catch (integrationError) {
+                console.error('❌ INTEGRATION AGENT ERROR');
+                console.error('==========================');
+                console.error('Error:', integrationError);
+                console.error('==========================\n');
+                
+                integrationResult = {
+                  selectedIntegration: 'none',
+                  tableName: 'none',
+                  mappedData: {},
+                  confidence: 0.0,
+                  reasoning: 'Integration processing failed',
+                  status: 'error',
+                  explanation: 'Integration agent encountered an error'
+                };
+              }
+            } else {
+              console.log('⏸️  INTEGRATION SKIPPED - DOCUMENT PROCESSING FAILED');
+              console.log('===================================================');
+              console.log('📝 Reason: Document processor did not return valid data');
+              console.log('===================================================\n');
+            }
             
           } catch (docError) {
             console.error('❌ DOCUMENT PROCESSING ERROR');
@@ -122,7 +170,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Return success response with AI analysis and document processing results
+    // Return success response with all processing results
     const response = {
       success: true,
       message: 'Webhook received successfully',
@@ -150,6 +198,16 @@ export async function POST(request: NextRequest) {
       }),
       ...(documentProcessingResult && {
         documentProcessing: documentProcessingResult
+      }),
+      ...(integrationResult && {
+        integration: {
+          selectedIntegration: integrationResult.selectedIntegration,
+          tableName: integrationResult.tableName,
+          status: integrationResult.status,
+          explanation: integrationResult.explanation,
+          confidence: integrationResult.confidence,
+          reasoning: integrationResult.reasoning
+        }
       })
     };
 
@@ -287,12 +345,13 @@ export async function GET(request: NextRequest) {
   }
 
   return NextResponse.json({
-    message: 'Webhook endpoint is active with AI email processing and document forwarding',
+    message: 'Webhook endpoint is active with full AI processing pipeline',
     timestamp: new Date().toISOString(),
     methods: ['GET', 'POST'],
     features: {
       aiEmailProcessing: true,
       documentProcessorIntegration: true,
+      integrationAgentProcessing: true,
       documentProcessorEndpoint: 'http://0.0.0.0:8080/test/process-document',
       supportedEmailFormats: [
         'type: "email"',
@@ -301,8 +360,16 @@ export async function GET(request: NextRequest) {
         'data: { subject, from, sender, ... }'
       ]
     },
+    pipeline: [
+      '1. Email received via webhook',
+      '2. AI agent analyzes email content',
+      '3. If approved, sent to document processor',
+      '4. Document data sent to integration agent',
+      '5. Integration agent routes to appropriate CRM/database',
+      '6. Complete status returned'
+    ],
     usage: {
-      POST: 'Send webhook data (email data will be processed by AI and forwarded if approved)',
+      POST: 'Send webhook data (full AI processing pipeline)',
       GET: 'Verify webhook or get status'
     }
   });
