@@ -256,12 +256,12 @@ html {
 }
 
 /* Subtle wobble animation for decorative elements */
-@keyframes wobble {
+/* @keyframes wobble {
   0%, 100% { transform: rotate(-0.5deg); }
   25% { transform: rotate(0.5deg); }
   50% { transform: rotate(-0.3deg); }
   75% { transform: rotate(0.3deg); }
-}
+} */
 
 .hand-drawn-container {
   animation: wobble 8s ease-in-out infinite;

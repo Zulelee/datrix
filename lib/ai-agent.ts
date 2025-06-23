@@ -36,7 +36,7 @@ export class EmailProcessingAgent {
 
   constructor() {
     // Initialize the OpenAI model
-    this.model = openai('gpt-4o-mini', {
+    this.model = openai('gpt-4.1-mini-2025-04-14', {
       structuredOutputs: true,
     });
   }
@@ -55,10 +55,17 @@ You are an intelligent email processing agent for Datrix, a data management plat
 Your job is to analyze incoming email data and decide whether it should be processed further.
 
 PROCESSING CRITERIA:
-- Business inquiries, sales leads, customer support requests should be processed
-- Spam, newsletters, automated notifications should generally NOT be processed
-- Consider sender reputation, content quality, and business relevance
-- Look for actionable content that could benefit from data extraction
+Keep Emails If They:
+	•	Contain keywords: Invoice, PO, Order, Payment, Sales
+	•	Are from: Vendors, clients, sales/accounts team, logistics
+	•	May have attachments: PDF, Excel, or Docs with invoice/PO names
+	•	Include phrases like: “Please find attached…”, “Order confirmation”, etc.
+	•	Come from trusted domains or known business contacts
+Discard Emails If They:
+	•	Are marketing, newsletters, or promotions
+	•	Come from unknown or generic senders
+	•	Have vague or irrelevant subjects
+	•	Lack any business/sales-related content
 
 EMAIL DATA TO ANALYZE:
 ${JSON.stringify(emailData, null, 2)}
@@ -70,14 +77,6 @@ Analyze this email data and provide:
 4. Appropriate category classification
 5. Priority level for processing
 6. Extracted structured data including key topics, sentiment, and urgency indicators
-
-IMPORTANT: Make sure to provide ALL required fields in extractedData:
-- sender: The email sender (required)
-- subject: The email subject (required)
-- keyTopics: Array of key topics found
-- sentiment: positive, neutral, or negative
-- hasAttachments: true/false
-- urgencyIndicators: Array of urgent phrases found
 
 Be thorough but concise in your analysis. Focus on business value and data quality.
         `,
