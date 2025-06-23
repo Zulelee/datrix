@@ -24,16 +24,20 @@ import {
   Globe,
   Sparkles,
   Zap,
-  Download
+  Download,
+  ThumbsUp,
+  ThumbsDown,
+  Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import { OnboardingNavbar } from '@/components/Navbar';
+import { datrixAIAgent, type DataAnalysis, type IntegrationExecution } from '@/lib/datrix-ai-agent';
 
 interface Message {
   id: string;
-  type: 'user' | 'ai' | 'system';
+  type: 'user' | 'ai' | 'system' | 'confirmation';
   content: string;
   timestamp: Date;
   file?: {
@@ -42,11 +46,13 @@ interface Message {
     type: string;
   };
   status?: 'processing' | 'completed' | 'error';
-  results?: {
-    processed: number;
-    added: number;
-    errors: number;
-    destination: string;
+  analysis?: DataAnalysis;
+  executionResult?: IntegrationExecution;
+  confirmationData?: {
+    integration: string;
+    table: string;
+    recordCount: number;
+    data: any[];
   };
 }
 
@@ -124,15 +130,15 @@ export default function DatrixAIPage() {
     const welcomeMessage: Message = {
       id: '1',
       type: 'ai',
-      content: `Hello! I'm DatrixAI, your intelligent data assistant. I can help you clean, organize, and import your data into your connected systems. 
+      content: `Hello! I'm DatrixAI, your intelligent data assistant. I can help you process and organize your data into your connected systems. 
 
 You can:
-• Upload files (CSV, Excel, PDF) by dragging & dropping or clicking the attachment button
-• Ask me to process and organize your data
-• Import cleaned data directly to your CRM or database
-• Get summaries of your data imports
+• Upload files (CSV, Excel, PDF) and I'll extract and structure the data
+• Paste or type data directly and I'll analyze it
+• I'll recommend the best integration and table for your data
+• Get confirmation before inserting anything into your systems
 
-What would you like to do today?`,
+What data would you like me to help you with today?`,
       timestamp: new Date()
     };
     setMessages([welcomeMessage]);
@@ -153,39 +159,83 @@ What would you like to do today?`,
     };
 
     setMessages(prev => [...prev, userMessage]);
+    const currentInput = inputText;
     setInputText('');
     setIsProcessing(true);
 
-    // Simulate AI response
-    setTimeout(() => {
-      const aiResponse: Message = {
-        id: (Date.now() + 1).toString(),
+    // Process the text input with AI
+    await processDataWithAI(currentInput);
+  };
+
+  const processDataWithAI = async (input: string) => {
+    // Add processing message
+    const processingMessage: Message = {
+      id: (Date.now() + 1).toString(),
+      type: 'ai',
+      content: `I'm analyzing your data... This may take a moment.`,
+      timestamp: new Date(),
+      status: 'processing'
+    };
+    setMessages(prev => [...prev, processingMessage]);
+
+    try {
+      // Analyze the data with AI
+      const analysis = await datrixAIAgent.analyzeData(input, user.id);
+
+      // Create analysis result message
+      const analysisMessage: Message = {
+        id: (Date.now() + 2).toString(),
         type: 'ai',
-        content: generateAIResponse(inputText),
-        timestamp: new Date()
+        content: `Great! I've analyzed your data. Here's what I found:
+
+**Data Type:** ${analysis.dataType.charAt(0).toUpperCase() + analysis.dataType.slice(1)}
+**Records Found:** ${analysis.recordCount}
+**Summary:** ${analysis.summary}
+
+**Recommendation:** I suggest adding this data to **${analysis.recommendedIntegration}** in the **${analysis.recommendedTable}** table.
+
+**Confidence:** ${Math.round(analysis.confidence * 100)}%
+**Reasoning:** ${analysis.reasoning}`,
+        timestamp: new Date(),
+        status: 'completed',
+        analysis
       };
-      setMessages(prev => [...prev, aiResponse]);
-      setIsProcessing(false);
-    }, 1500);
-  };
 
-  const generateAIResponse = (input: string): string => {
-    const lowerInput = input.toLowerCase();
-    
-    if (lowerInput.includes('upload') || lowerInput.includes('file')) {
-      return "I'd be happy to help you process a file! You can drag and drop your file here or click the attachment button. I support CSV, Excel, and PDF files. Once uploaded, I'll analyze the data and help you organize it for import.";
-    } else if (lowerInput.includes('history') || lowerInput.includes('last import')) {
-      return "Here's a summary of your recent imports:\n\n• Yesterday: 45 contacts added to Airtable\n• 2 days ago: 23 deals imported to PostgreSQL\n• Last week: 67 leads processed to Notion\n\nWould you like more details about any of these imports?";
-    } else if (lowerInput.includes('undo')) {
-      return "I can help you undo your last import. However, please note that this action cannot be reversed. Which specific import would you like me to undo? Please provide the date or destination system.";
-    } else if (lowerInput.includes('connect') || lowerInput.includes('integration')) {
-      return "I can see you have Airtable, PostgreSQL, and Notion connected. Would you like to add more integrations? I can help you connect to Google Sheets, Slack, or other platforms through your profile settings.";
-    } else {
-      return "I understand you'd like help with your data. Could you be more specific? I can help you:\n\n• Process and clean uploaded files\n• Import data to your connected systems\n• Review import history\n• Undo recent imports\n• Connect new data sources\n\nWhat would you like to do?";
+      setMessages(prev => [...prev, analysisMessage]);
+
+      // If we have data to insert and good confidence, show confirmation
+      if (analysis.recordCount > 0 && analysis.confidence > 0.5) {
+        const confirmationMessage: Message = {
+          id: (Date.now() + 3).toString(),
+          type: 'confirmation',
+          content: `Would you like me to add ${analysis.recordCount} record${analysis.recordCount > 1 ? 's' : ''} to **${analysis.recommendedIntegration}.${analysis.recommendedTable}**?`,
+          timestamp: new Date(),
+          confirmationData: {
+            integration: analysis.recommendedIntegration,
+            table: analysis.recommendedTable,
+            recordCount: analysis.recordCount,
+            data: analysis.extractedData
+          }
+        };
+
+        setMessages(prev => [...prev, confirmationMessage]);
+      }
+
+    } catch (error) {
+      const errorMessage: Message = {
+        id: (Date.now() + 2).toString(),
+        type: 'system',
+        content: `Sorry, I encountered an error while analyzing your data: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        timestamp: new Date(),
+        status: 'error'
+      };
+      setMessages(prev => [...prev, errorMessage]);
     }
+
+    setIsProcessing(false);
   };
 
-  const handleFileUpload = (files: FileList | null) => {
+  const handleFileUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
 
     const file = files[0];
@@ -193,14 +243,15 @@ What would you like to do today?`,
       'text/csv',
       'application/vnd.ms-excel',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'application/pdf'
+      'application/pdf',
+      'text/plain'
     ];
 
     if (!allowedTypes.includes(file.type)) {
       const errorMessage: Message = {
         id: Date.now().toString(),
         type: 'system',
-        content: 'Sorry, I only support CSV, Excel, and PDF files. Please upload a supported file type.',
+        content: 'Sorry, I only support CSV, Excel, PDF, and text files. Please upload a supported file type.',
         timestamp: new Date(),
         status: 'error'
       };
@@ -222,36 +273,164 @@ What would you like to do today?`,
     };
 
     setMessages(prev => [...prev, fileMessage]);
+    setIsProcessing(true);
 
-    // Simulate processing
-    setTimeout(() => {
+    // Add processing message
+    const processingMessage: Message = {
+      id: (Date.now() + 1).toString(),
+      type: 'ai',
+      content: `I'm processing your file "${file.name}"... Extracting and analyzing the data.`,
+      timestamp: new Date(),
+      status: 'processing'
+    };
+    setMessages(prev => [...prev, processingMessage]);
+
+    try {
+      // Process file through document processor
+      const extractedText = await datrixAIAgent.processFile(file, user.id);
+
+      // Analyze the extracted data
+      const analysis = await datrixAIAgent.analyzeData(extractedText, user.id);
+
+      // Create analysis result message
+      const analysisMessage: Message = {
+        id: (Date.now() + 2).toString(),
+        type: 'ai',
+        content: `Excellent! I've processed your file and extracted the data. Here's what I found:
+
+**Data Type:** ${analysis.dataType.charAt(0).toUpperCase() + analysis.dataType.slice(1)}
+**Records Found:** ${analysis.recordCount}
+**Summary:** ${analysis.summary}
+
+**Recommendation:** I suggest adding this data to **${analysis.recommendedIntegration}** in the **${analysis.recommendedTable}** table.
+
+**Confidence:** ${Math.round(analysis.confidence * 100)}%
+**Reasoning:** ${analysis.reasoning}`,
+        timestamp: new Date(),
+        status: 'completed',
+        analysis
+      };
+
+      setMessages(prev => [...prev, analysisMessage]);
+
+      // If we have data to insert and good confidence, show confirmation
+      if (analysis.recordCount > 0 && analysis.confidence > 0.5) {
+        const confirmationMessage: Message = {
+          id: (Date.now() + 3).toString(),
+          type: 'confirmation',
+          content: `Would you like me to add ${analysis.recordCount} record${analysis.recordCount > 1 ? 's' : ''} to **${analysis.recommendedIntegration}.${analysis.recommendedTable}**?`,
+          timestamp: new Date(),
+          confirmationData: {
+            integration: analysis.recommendedIntegration,
+            table: analysis.recommendedTable,
+            recordCount: analysis.recordCount,
+            data: analysis.extractedData
+          }
+        };
+
+        setMessages(prev => [...prev, confirmationMessage]);
+      }
+
+    } catch (error) {
+      const errorMessage: Message = {
+        id: (Date.now() + 2).toString(),
+        type: 'system',
+        content: `Sorry, I encountered an error while processing your file: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        timestamp: new Date(),
+        status: 'error'
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    }
+
+    setIsProcessing(false);
+  };
+
+  const handleConfirmation = async (messageId: string, confirmed: boolean) => {
+    const message = messages.find(m => m.id === messageId);
+    if (!message?.confirmationData) return;
+
+    setIsProcessing(true);
+
+    if (confirmed) {
+      // Add confirmation message
+      const confirmMessage: Message = {
+        id: Date.now().toString(),
+        type: 'user',
+        content: 'Yes, please proceed with adding the data.',
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, confirmMessage]);
+
+      // Add processing message
       const processingMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: 'ai',
-        content: `I'm analyzing your file "${file.name}"... This may take a moment.`,
+        content: `Processing... Adding ${message.confirmationData.recordCount} records to ${message.confirmationData.integration}.${message.confirmationData.table}`,
         timestamp: new Date(),
         status: 'processing'
       };
       setMessages(prev => [...prev, processingMessage]);
 
-      // Simulate completion
-      setTimeout(() => {
-        const completedMessage: Message = {
+      try {
+        // Execute the integration
+        const executionResult = await datrixAIAgent.executeIntegration(
+          user.id,
+          message.confirmationData.integration,
+          message.confirmationData.table,
+          message.confirmationData.data
+        );
+
+        // Create result message
+        const resultMessage: Message = {
           id: (Date.now() + 2).toString(),
           type: 'ai',
-          content: `Great! I've successfully processed "${file.name}". Here's what I found:`,
+          content: `${executionResult.status === 'success' ? '✅' : '❌'} **${executionResult.explanation}**
+
+**Status:** ${executionResult.status.charAt(0).toUpperCase() + executionResult.status.slice(1)}
+**Records Inserted:** ${executionResult.insertedRecords}
+**Integration:** ${message.confirmationData.integration}.${message.confirmationData.table}
+**Timestamp:** ${new Date().toLocaleString()}
+
+${executionResult.errors.length > 0 ? `**Errors:** ${executionResult.errors.join(', ')}` : ''}
+
+Is there anything else you'd like me to help you with?`,
           timestamp: new Date(),
-          status: 'completed',
-          results: {
-            processed: 156,
-            added: 142,
-            errors: 14,
-            destination: 'Airtable'
-          }
+          status: executionResult.status === 'success' ? 'completed' : 'error',
+          executionResult
         };
-        setMessages(prev => [...prev, completedMessage]);
-      }, 3000);
-    }, 1000);
+
+        setMessages(prev => [...prev, resultMessage]);
+
+      } catch (error) {
+        const errorMessage: Message = {
+          id: (Date.now() + 2).toString(),
+          type: 'system',
+          content: `Sorry, I encountered an error while executing the integration: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          timestamp: new Date(),
+          status: 'error'
+        };
+        setMessages(prev => [...prev, errorMessage]);
+      }
+    } else {
+      // User declined
+      const declineMessage: Message = {
+        id: Date.now().toString(),
+        type: 'user',
+        content: 'No, please don\'t add the data.',
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, declineMessage]);
+
+      const responseMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        type: 'ai',
+        content: 'Understood! I won\'t add the data to your integration. Is there anything else you\'d like me to help you with?',
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, responseMessage]);
+    }
+
+    setIsProcessing(false);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -365,25 +544,14 @@ What would you like to do today?`,
               <div className="mt-6 p-4 bg-[#6e1d27]/5 rounded-lg border border-[#6e1d27]/20">
                 <h3 className="font-semibold text-[#3d0e15] font-ibm-plex mb-2 flex items-center">
                   <Zap className="mr-2 h-4 w-4 text-[#6e1d27]" />
-                  Quick Actions
+                  AI Features
                 </h3>
-                <div className="space-y-2">
-                  <Button
-                    onClick={() => router.push('/onboarding')}
-                    variant="outline"
-                    size="sm"
-                    className="w-full justify-start text-xs hand-drawn-border border border-[#6e1d27]/30 text-[#6e1d27] hover:bg-[#6e1d27] hover:text-white font-ibm-plex"
-                  >
-                    Connect new source
-                  </Button>
-                  <Button
-                    onClick={() => router.push('/dashboard')}
-                    variant="outline"
-                    size="sm"
-                    className="w-full justify-start text-xs hand-drawn-border border border-[#6e1d27]/30 text-[#6e1d27] hover:bg-[#6e1d27] hover:text-white font-ibm-plex"
-                  >
-                    View import history
-                  </Button>
+                <div className="space-y-1 text-xs text-[#6e1d27] font-ibm-plex">
+                  <p>• Intelligent data analysis</p>
+                  <p>• Smart integration routing</p>
+                  <p>• Schema-aware mapping</p>
+                  <p>• Confirmation before insertion</p>
+                  <p>• File processing & extraction</p>
                 </div>
               </div>
 
@@ -459,12 +627,16 @@ What would you like to do today?`,
                               ? 'bg-[#6e1d27] text-white' 
                               : message.type === 'ai'
                               ? 'bg-[#6e1d27]/10 text-[#6e1d27]'
+                              : message.type === 'confirmation'
+                              ? 'bg-blue-100 text-blue-600'
                               : 'bg-yellow-100 text-yellow-600'
                           }`}>
                             {message.type === 'user' ? (
                               <User className="w-4 h-4" />
                             ) : message.type === 'ai' ? (
                               <Bot className="w-4 h-4" />
+                            ) : message.type === 'confirmation' ? (
+                              <CheckCircle className="w-4 h-4" />
                             ) : (
                               <AlertCircle className="w-4 h-4" />
                             )}
@@ -477,6 +649,8 @@ What would you like to do today?`,
                                 ? 'bg-[#6e1d27] text-white hand-drawn-border'
                                 : message.type === 'ai'
                                 ? 'bg-white border border-[#6e1d27]/20 text-[#3d0e15] hand-drawn-border'
+                                : message.type === 'confirmation'
+                                ? 'bg-blue-50 border border-blue-200 text-blue-800'
                                 : 'bg-yellow-50 border border-yellow-200 text-yellow-800'
                             }`}>
                               {/* File attachment display */}
@@ -497,45 +671,39 @@ What would you like to do today?`,
                                 </div>
                               )}
 
-                              <p className="font-ibm-plex whitespace-pre-line">
-                                {message.content}
-                              </p>
+                              <div className="font-ibm-plex whitespace-pre-line">
+                                {message.content.split('**').map((part, i) => 
+                                  i % 2 === 0 ? part : <strong key={i}>{part}</strong>
+                                )}
+                              </div>
 
                               {/* Processing status */}
                               {message.status === 'processing' && (
                                 <div className="mt-3 flex items-center space-x-2 text-blue-600">
-                                  <Clock className="w-4 h-4 animate-spin" />
+                                  <Loader2 className="w-4 h-4 animate-spin" />
                                   <span className="text-sm font-ibm-plex">Processing...</span>
                                 </div>
                               )}
 
-                              {/* Results display */}
-                              {message.results && (
-                                <div className="mt-3 p-3 bg-green-50 rounded-lg border border-green-200">
-                                  <div className="grid grid-cols-2 gap-2 text-sm font-ibm-plex">
-                                    <div>
-                                      <span className="text-green-600 font-semibold">Processed:</span>
-                                      <span className="ml-1 text-green-800">{message.results.processed} rows</span>
-                                    </div>
-                                    <div>
-                                      <span className="text-green-600 font-semibold">Added:</span>
-                                      <span className="ml-1 text-green-800">{message.results.added} records</span>
-                                    </div>
-                                    <div>
-                                      <span className="text-red-600 font-semibold">Errors:</span>
-                                      <span className="ml-1 text-red-800">{message.results.errors} rows</span>
-                                    </div>
-                                    <div>
-                                      <span className="text-blue-600 font-semibold">Destination:</span>
-                                      <span className="ml-1 text-blue-800">{message.results.destination}</span>
-                                    </div>
-                                  </div>
+                              {/* Confirmation buttons */}
+                              {message.type === 'confirmation' && message.confirmationData && (
+                                <div className="mt-4 flex space-x-3">
                                   <Button
-                                    size="sm"
-                                    className="mt-2 hand-drawn-button bg-green-600 hover:bg-green-700 text-white font-ibm-plex"
+                                    onClick={() => handleConfirmation(message.id, true)}
+                                    disabled={isProcessing}
+                                    className="hand-drawn-button bg-green-600 hover:bg-green-700 text-white font-ibm-plex flex items-center"
                                   >
-                                    <Download className="w-3 h-3 mr-1" />
-                                    Download Report
+                                    <ThumbsUp className="w-4 h-4 mr-2" />
+                                    Yes, Proceed
+                                  </Button>
+                                  <Button
+                                    onClick={() => handleConfirmation(message.id, false)}
+                                    disabled={isProcessing}
+                                    variant="outline"
+                                    className="hand-drawn-border border-2 border-red-500 text-red-600 hover:bg-red-50 font-ibm-plex flex items-center"
+                                  >
+                                    <ThumbsDown className="w-4 h-4 mr-2" />
+                                    No, Cancel
                                   </Button>
                                 </div>
                               )}
@@ -609,7 +777,7 @@ What would you like to do today?`,
                         value={inputText}
                         onChange={(e) => setInputText(e.target.value)}
                         onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                        placeholder="Type your message or upload a file..."
+                        placeholder="Type your data or describe what you want to organize..."
                         className="hand-drawn-input bg-white/80 border-2 border-[#6e1d27] text-[#3d0e15] placeholder-[#6e1d27]/60 font-ibm-plex pr-12"
                         disabled={isProcessing}
                       />
@@ -637,13 +805,13 @@ What would you like to do today?`,
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept=".csv,.xlsx,.xls,.pdf"
+                  accept=".csv,.xlsx,.xls,.pdf,.txt"
                   onChange={(e) => handleFileUpload(e.target.files)}
                   className="hidden"
                 />
 
                 <p className="text-xs text-[#6e1d27]/60 font-ibm-plex mt-2 text-center">
-                  Supported formats: CSV, Excel, PDF • Max size: 10MB
+                  Supported formats: CSV, Excel, PDF, Text • Max size: 10MB
                 </p>
               </div>
 
