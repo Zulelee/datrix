@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 // Define the schema for the AI agent's decision
 const EmailProcessingDecisionSchema = z.object({
-  shouldProcess: z.boolean().describe('Whether the email should be processed further'),
+  shouldProcess: z.boolean().describe('Whether the email should be processed further (true/false)'),
   confidence: z.number().min(0).max(1).describe('Confidence level of the decision (0-1)'),
   reasoning: z.string().describe('Explanation for the decision'),
   category: z.enum([
