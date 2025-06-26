@@ -743,7 +743,7 @@ export default function OnboardingPage() {
                           <Input
                             value={modalInputs.apiKey || ''}
                             onChange={e => setModalInputs(inputs => ({ ...inputs, apiKey: e.target.value }))}
-                            placeholder="API Key"
+                            placeholder="Access Token"
                             className="hand-drawn-input bg-white border-2 border-[#6e1d27] font-ibm-plex"
                           />
                           <Input

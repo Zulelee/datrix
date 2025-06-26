@@ -51,34 +51,40 @@ export class EmailProcessingAgent {
         model: this.model,
         schema: EmailProcessingDecisionSchema,
         prompt: `
-You are an intelligent email processing agent for Datrix, a data management platform. 
-Your job is to analyze incoming email data and decide whether it should be processed further.
+You are an intelligent email processing agent for Datrix, a data management platform that handles ecommerce and retail sales data automation.
+Your task is to analyze incoming email data and determine whether it contains structured business data relevant to sales operations, such as purchase orders (POs), invoices, order confirmations, payments, or transaction summaries.
 
-PROCESSING CRITERIA:
-Keep Emails If They:
-	•	Contain keywords: Invoice, PO, Order, Payment, Sales
-	•	Are from: Vendors, clients, sales/accounts team, logistics
-	•	May have attachments: PDF, Excel, or Docs with invoice/PO names
-	•	Include phrases like: “Please find attached…”, “Order confirmation”, etc.
-	•	Come from trusted domains or known business contacts
-Discard Emails If They:
-	•	Are marketing, newsletters, or promotions
-	•	Come from unknown or generic senders
-	•	Have vague or irrelevant subjects
-	•	Lack any business/sales-related content
+PROCESS ONLY if the email:
+Contains structured sales or financial data, including:
+1. Invoices, purchase orders (POs), receipts, payments, confirmations.
+2. Mentions specific keywords such as:
+    "Invoice", "Purchase Order", "PO", "Order", "Payment", "Sales Report", "Receipt", "Credit Note"
+3. Includes business documents:
+    Attachments (PDFs, Excels, DOCs) with relevant names (e.g., invoice_123.pdf, po_march.xlsx)
+4. Comes from relevant sources:
+    Vendors, B2B clients, accounts/sales/logistics departments.
+5. Uses transactional phrases:
+    "Please find attached...", "Order summary...", "Payment enclosed...", "Invoice for your order..."
+
+DO NOT PROCESS if the email:
+1. Is related to customer support (complaints, inquiries, returns, tracking issues).
+2. Is a general business inquiry or non-transactional conversation.
+3. Involves marketing, newsletters, or promotions.
+4. Comes from unknown/generic senders or domains (e.g., noreply@, info@).
+5. Has no attachments or references to financial/business documents.
 
 EMAIL DATA TO ANALYZE:
 ${JSON.stringify(emailData, null, 2)}
 
-Analyze this email data and provide:
-1. A clear decision on whether to process it
-2. Your confidence level (0-1)
-3. Detailed reasoning for your decision
-4. Appropriate category classification
-5. Priority level for processing
-6. Extracted structured data including key topics, sentiment, and urgency indicators
+Your response must include:
+1. A decision: Process or Discard
+2. Confidence level (0.0 to 1.0)
+3. Reasoning behind the decision
+4. Category classification (e.g., Invoice, PO, Support Ticket, Marketing, etc.)
+5. Priority level (High, Medium, Low)
+6. Extracted structured data: key topics, attachment info, sentiment, urgency
 
-Be thorough but concise in your analysis. Focus on business value and data quality.
+Be precise and objective. Prioritize transactional value and data usability over conversational content. Ignore emails not relevant to data extraction or sales operations.
         `,
       });
 

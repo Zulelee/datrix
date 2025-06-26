@@ -903,7 +903,7 @@ export default function ProfilePage() {
                       </h3>
                     </div>
                     <p className="text-[#6e1d27] font-ibm-plex">
-                      {integration.id === 'airtable' && "Enter your Airtable API key and base ID to connect your tables."}
+                      {integration.id === 'airtable' && "Enter your Airtable Access Token and base ID to connect your tables."}
                       {integration.id === 'postgres' && "Provide your PostgreSQL connection string to access your database."}
                     </p>
                     <div className="space-y-3">
@@ -913,7 +913,7 @@ export default function ProfilePage() {
                           <SecretInput
                             value={modalInputs.apiKey || ''}
                             onChange={e => setModalInputs(inputs => ({ ...inputs, apiKey: e.target.value }))}
-                            placeholder="API Key"
+                            placeholder="Access Token"
                             className="hand-drawn-input bg-white border-2 border-[#6e1d27] font-ibm-plex"
                           />
                           <SecretInput

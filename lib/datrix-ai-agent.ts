@@ -44,13 +44,7 @@ export type DataAnalysis = z.infer<typeof DataAnalysisSchema>;
 export type IntegrationExecution = z.infer<typeof IntegrationExecutionSchema>;
 
 export class DatrixAIAgent {
-  private model;
-
-  constructor() {
-    this.model = openai('gpt-4o-mini', {
-      structuredOutputs: true,
-    });
-  }
+  constructor() {}
 
   // Tool: Get user's available integrations
   private getUserIntegrations = tool({
@@ -74,7 +68,8 @@ export class DatrixAIAgent {
           name: source.source_type.charAt(0).toUpperCase() + source.source_type.slice(1),
           type: source.source_type,
           connected: true,
-          tables: this.getAvailableTables(source.source_type)
+          tables: this.getAvailableTables(source.source_type),
+          credentials: source.credentials // Include credentials for possible use
         })) || [];
 
         console.log(`✅ Found ${integrations.length} integrations:`, integrations.map(i => i.name).join(', '));
@@ -96,7 +91,7 @@ export class DatrixAIAgent {
   });
 
   // Tool: Execute integration (insert data)
-  private executeIntegration = tool({
+  private executeIntegrationTool = tool({
     description: 'Execute the data insertion into the selected integration',
     parameters: z.object({
       userId: z.string().describe('The user ID'),
@@ -182,8 +177,8 @@ export class DatrixAIAgent {
     console.log('📄 Input length:', input.length, 'characters');
 
     try {
-      const { object } = await generateObject({
-        model: this.model,
+      const { object } = await (generateObject as any)({
+        model: openai('gpt-4o-mini'),
         schema: DataAnalysisSchema,
         tools: {
           getUserIntegrations: this.getUserIntegrations
@@ -284,11 +279,11 @@ Be thorough and accurate in your analysis.
     console.log('📊 Records:', data.length);
 
     try {
-      const { object } = await generateObject({
-        model: this.model,
+      const { object } = await (generateObject as any)({
+        model: openai('gpt-4o-mini'),
         schema: IntegrationExecutionSchema,
         tools: {
-          executeIntegration: this.executeIntegration
+          executeIntegration: this.executeIntegrationTool
         },
         prompt: `
 You are executing a data integration for DatrixAI. 
