@@ -595,42 +595,77 @@ export default function WebhookTestPage() {
           </div>
 
           {/* Airtable API Tester Section */}
-          <div className="hand-drawn-container bg-white/60 backdrop-blur-sm p-6 relative max-w-xl mx-auto mb-12">
-            <h2 className="text-2xl font-bold text-[#3d0e15] font-ibm-plex hand-drawn-text mb-6 flex items-center">
-              <Globe className="mr-3 h-6 w-6 text-[#6e1d27]" />
-              Airtable API Tester
-            </h2>
-            <div className="space-y-4 mb-4">
-              <Label>Airtable Token</Label>
-              <Input value={airtableToken} onChange={e => setAirtableToken(e.target.value)} placeholder="pat..." />
-              <Label>Base ID</Label>
-              <Input value={airtableBaseId} onChange={e => setAirtableBaseId(e.target.value)} placeholder="app..." />
-              <Label>Endpoint</Label>
-              <select className="hand-drawn-input border-2 border-[#6e1d27] w-full" value={airtableTab} onChange={e => setAirtableTab(e.target.value as any)}>
-                <option value="bases">Get Bases</option>
-                <option value="tables">Get Tables</option>
-                <option value="records">Create Record</option>
-              </select>
-              {airtableTab === 'records' && (
-                <>
-                  <Label>Table ID or Name</Label>
-                  <Input value={airtableTableIdOrName} onChange={e => setAirtableTableIdOrName(e.target.value)} placeholder="tbl... or Table Name" />
-                  <Label>Records (JSON Array)</Label>
-                  <Textarea value={airtableRecords} onChange={e => setAirtableRecords(e.target.value)} rows={5} />
-                </>
-              )}
-            </div>
-            <Button onClick={testAirtable} disabled={airtableLoading} className="w-full hand-drawn-button bg-[#6e1d27] hover:bg-[#912d3c] text-white font-ibm-plex mb-4">
-              {airtableLoading ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-              Test Airtable Endpoint
-            </Button>
-            {airtableResponse && (
-              <div className="mt-4">
-                <Label>Response</Label>
-                <pre className="bg-gray-50 p-3 rounded border text-xs max-h-60 overflow-auto font-mono">{JSON.stringify(airtableResponse, null, 2)}</pre>
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, delay: 0.15, ease: "easeOut" }}
+          >
+            <div className="hand-drawn-container bg-white/60 backdrop-blur-sm p-6 relative mb-12">
+              <div className="absolute top-2 left-2 w-4 h-4 opacity-30">
+                <svg viewBox="0 0 24 24" className="w-full h-full text-[#6e1d27]">
+                  <path d="M3 3 L21 3 L21 21 L3 21 Z" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="hand-drawn-path" />
+                </svg>
               </div>
-            )}
-          </div>
+              <div className="absolute top-2 right-2 w-4 h-4 opacity-30">
+                <svg viewBox="0 0 24 24" className="w-full h-full text-[#6e1d27]">
+                  <circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" strokeWidth="1.5" className="hand-drawn-path" />
+                </svg>
+              </div>
+              <h2 className="text-2xl font-bold text-[#3d0e15] font-ibm-plex hand-drawn-text mb-6 flex items-center">
+                <Globe className="mr-3 h-6 w-6 text-[#6e1d27]" />
+                Airtable API Tester
+              </h2>
+              <div className="space-y-4 mb-6">
+                <Label className="text-[#3d0e15] font-ibm-plex font-medium hand-drawn-text">Airtable Token</Label>
+                <Input value={airtableToken} onChange={e => setAirtableToken(e.target.value)} placeholder="pat..." className="hand-drawn-input bg-white/80 border-2 border-[#6e1d27] text-[#3d0e15] font-ibm-plex" />
+                <Label className="text-[#3d0e15] font-ibm-plex font-medium hand-drawn-text">Base ID</Label>
+                <Input value={airtableBaseId} onChange={e => setAirtableBaseId(e.target.value)} placeholder="app..." className="hand-drawn-input bg-white/80 border-2 border-[#6e1d27] text-[#3d0e15] font-ibm-plex" />
+                <Label className="text-[#3d0e15] font-ibm-plex font-medium hand-drawn-text">Endpoint</Label>
+                <select className="hand-drawn-input bg-white/80 border-2 border-[#6e1d27] text-[#3d0e15] font-ibm-plex w-full" value={airtableTab} onChange={e => setAirtableTab(e.target.value as any)}>
+                  <option value="bases">Get Bases</option>
+                  <option value="tables">Get Tables</option>
+                  <option value="records">Create Record</option>
+                </select>
+                {airtableTab === 'records' && (
+                  <>
+                    <Label className="text-[#3d0e15] font-ibm-plex font-medium hand-drawn-text">Table ID or Name</Label>
+                    <Input value={airtableTableIdOrName} onChange={e => setAirtableTableIdOrName(e.target.value)} placeholder="tbl... or Table Name" className="hand-drawn-input bg-white/80 border-2 border-[#6e1d27] text-[#3d0e15] font-ibm-plex" />
+                    <Label className="text-[#3d0e15] font-ibm-plex font-medium hand-drawn-text">Records (JSON Array)</Label>
+                    <Textarea value={airtableRecords} onChange={e => setAirtableRecords(e.target.value)} rows={5} className="hand-drawn-input bg-white/80 border-2 border-[#6e1d27] text-[#3d0e15] font-ibm-plex font-mono text-sm" />
+                  </>
+                )}
+              </div>
+              <Button onClick={testAirtable} disabled={airtableLoading} className="w-full hand-drawn-button bg-[#6e1d27] hover:bg-[#912d3c] text-white font-ibm-plex">
+                {airtableLoading ? (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <Send className="mr-2 h-4 w-4" />
+                    Test Airtable Endpoint
+                  </>
+                )}
+              </Button>
+              {airtableResponse && (
+                <div className="mt-4">
+                  <Label className="text-[#3d0e15] font-ibm-plex font-medium hand-drawn-text">Response</Label>
+                  <pre className="bg-gray-50 p-3 rounded border text-xs max-h-60 overflow-auto font-mono">{JSON.stringify(airtableResponse, null, 2)}</pre>
+                </div>
+              )}
+              <div className="absolute bottom-2 left-2 w-6 h-3 opacity-20">
+                <svg viewBox="0 0 32 16" className="w-full h-full text-[#6e1d27]">
+                  <path d="M2 8 Q8 2 16 8 T30 8" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="hand-drawn-path" />
+                </svg>
+              </div>
+              <div className="absolute bottom-2 right-2 w-4 h-4 opacity-20">
+                <svg viewBox="0 0 24 24" className="w-full h-full text-[#6e1d27]">
+                  <path d="M12 2 L22 12 L12 22 L2 12 Z" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="hand-drawn-path" />
+                </svg>
+              </div>
+            </div>
+          </motion.div>
 
           {/* Console Instructions */}
           <motion.div
