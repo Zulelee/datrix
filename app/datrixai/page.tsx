@@ -27,17 +27,26 @@ import {
   Download,
   ThumbsUp,
   ThumbsDown,
-  Loader2
+  Loader2,
+  Trash2,
+  RotateCcw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import { OnboardingNavbar } from '@/components/Navbar';
-import { datrixAIAgent, type DataAnalysis, type IntegrationExecution } from '@/lib/datrix-ai-agent';
+import { useChat } from '@ai-sdk/react';
+import { 
+  saveConversation, 
+  updateConversation, 
+  createMessage,
+  getUserConversation,
+  type ChatMessage 
+} from '@/lib/chatbot';
 
 interface Message {
   id: string;
-  type: 'user' | 'ai' | 'system' | 'confirmation';
+  type: 'user' | 'ai' | 'system';
   content: string;
   timestamp: Date;
   file?: {
@@ -46,14 +55,7 @@ interface Message {
     type: string;
   };
   status?: 'processing' | 'completed' | 'error';
-  analysis?: DataAnalysis;
-  executionResult?: IntegrationExecution;
-  confirmationData?: {
-    integration: string;
-    table: string;
-    recordCount: number;
-    data: any[];
-  };
+  isStreaming?: boolean;
 }
 
 interface ConnectedSource {
@@ -68,13 +70,51 @@ export default function DatrixAIPage() {
   const [mounted, setMounted] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [inputText, setInputText] = useState('');
   const [isDragging, setIsDragging] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [initialMessages, setInitialMessages] = useState<any[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
+  
+  // Use the AI SDK's useChat hook
+  const { messages, input, handleInputChange, handleSubmit, isLoading, append, setMessages } = useChat({
+    api: '/api/chat',
+    body: {
+      userId: user?.id
+    },
+    initialMessages: initialMessages,
+    onFinish: async (message) => {
+      // Save conversation after each AI response
+      if (user?.id) {
+        await saveConversationToDb();
+      }
+    }
+  });
+
+  // Function to save conversation to database
+  const saveConversationToDb = async () => {
+    if (!user?.id || messages.length === 0 || !currentConversationId) return;
+
+    setIsSaving(true);
+    try {
+      // Convert AI SDK messages to our ChatMessage format
+      const chatMessages: ChatMessage[] = messages.map(msg => ({
+        id: msg.id,
+        role: msg.role as 'user' | 'assistant',
+        content: msg.content,
+        timestamp: new Date().toISOString()
+      }));
+
+      // Always update the existing conversation (since each user has only one)
+      await updateConversation(currentConversationId, chatMessages);
+    } catch (error) {
+      console.error('Error saving conversation:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   // Mock connected sources
   const [connectedSources] = useState<ConnectedSource[]>([
@@ -104,12 +144,18 @@ export default function DatrixAIPage() {
   useEffect(() => {
     setMounted(true);
     checkUser();
-    initializeChat();
   }, []);
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Load messages after user is authenticated and useChat is ready
+  useEffect(() => {
+    if (user?.id && initialMessages.length > 0 && setMessages) {
+      setMessages(initialMessages);
+    }
+  }, [user, initialMessages, setMessages]);
 
   const checkUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -118,7 +164,36 @@ export default function DatrixAIPage() {
       return;
     }
     setUser(user);
+    
+    // Load existing conversation
+    await loadUserConversation(user.id);
     setLoading(false);
+  };
+
+  const loadUserConversation = async (userId: string) => {
+    try {
+      const { data, error } = await getUserConversation(userId);
+      
+      if (!error && data) {
+        setCurrentConversationId(data.id);
+        
+        // Convert ChatMessage format to AI SDK message format
+        const aiSdkMessages = data.conversation_json.messages.map((msg: ChatMessage) => ({
+          id: msg.id,
+          role: msg.role,
+          content: msg.content
+        }));
+        
+        setInitialMessages(aiSdkMessages);
+        
+        // If useChat is already initialized, update messages
+        if (setMessages) {
+          setMessages(aiSdkMessages);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading conversation:', error);
+    }
   };
 
   const logout = async () => {
@@ -126,113 +201,25 @@ export default function DatrixAIPage() {
     router.push('/');
   };
 
-  const initializeChat = () => {
-    const welcomeMessage: Message = {
-      id: '1',
-      type: 'ai',
-      content: `Hello! I'm DatrixAI, your intelligent data assistant. I can help you process and organize your data into your connected systems. 
-
-You can:
-• Upload files (CSV, Excel, PDF) and I'll extract and structure the data
-• Paste or type data directly and I'll analyze it
-• I'll recommend the best integration and table for your data
-• Get confirmation before inserting anything into your systems
-
-What data would you like me to help you with today?`,
-      timestamp: new Date()
-    };
-    setMessages([welcomeMessage]);
-  };
-
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const handleSendMessage = async () => {
-    if (!inputText.trim() || isProcessing) return;
-
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      type: 'user',
-      content: inputText,
-      timestamp: new Date()
-    };
-
-    setMessages(prev => [...prev, userMessage]);
-    const currentInput = inputText;
-    setInputText('');
-    setIsProcessing(true);
-
-    // Process the text input with AI
-    await processDataWithAI(currentInput);
-  };
-
-  const processDataWithAI = async (input: string) => {
-    // Add processing message
-    const processingMessage: Message = {
-      id: (Date.now() + 1).toString(),
-      type: 'ai',
-      content: `I'm analyzing your data... This may take a moment.`,
-      timestamp: new Date(),
-      status: 'processing'
-    };
-    setMessages(prev => [...prev, processingMessage]);
-
+  const resetChat = async () => {
+    if (!user?.id || !currentConversationId) return;
+    
     try {
-      // Analyze the data with AI
-      const analysis = await datrixAIAgent.analyzeData(input, user.id);
-
-      // Create analysis result message
-      const analysisMessage: Message = {
-        id: (Date.now() + 2).toString(),
-        type: 'ai',
-        content: `Great! I've analyzed your data. Here's what I found:
-
-**Data Type:** ${analysis.dataType.charAt(0).toUpperCase() + analysis.dataType.slice(1)}
-**Records Found:** ${analysis.recordCount}
-**Summary:** ${analysis.summary}
-
-**Recommendation:** I suggest adding this data to **${analysis.recommendedIntegration}** in the **${analysis.recommendedTable}** table.
-
-**Confidence:** ${Math.round(analysis.confidence * 100)}%
-**Reasoning:** ${analysis.reasoning}`,
-        timestamp: new Date(),
-        status: 'completed',
-        analysis
-      };
-
-      setMessages(prev => [...prev, analysisMessage]);
-
-      // If we have data to insert and good confidence, show confirmation
-      if (analysis.recordCount > 0 && analysis.confidence > 0.5) {
-        const confirmationMessage: Message = {
-          id: (Date.now() + 3).toString(),
-          type: 'confirmation',
-          content: `Would you like me to add ${analysis.recordCount} record${analysis.recordCount > 1 ? 's' : ''} to **${analysis.recommendedIntegration}.${analysis.recommendedTable}**?`,
-          timestamp: new Date(),
-          confirmationData: {
-            integration: analysis.recommendedIntegration,
-            table: analysis.recommendedTable,
-            recordCount: analysis.recordCount,
-            data: analysis.extractedData
-          }
-        };
-
-        setMessages(prev => [...prev, confirmationMessage]);
-      }
-
+      // Clear messages in the UI immediately
+      setMessages([]);
+      
+      // Update the database to clear the conversation
+      await updateConversation(currentConversationId, []);
+      
+      console.log('Chat reset successfully');
     } catch (error) {
-      const errorMessage: Message = {
-        id: (Date.now() + 2).toString(),
-        type: 'system',
-        content: `Sorry, I encountered an error while analyzing your data: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        timestamp: new Date(),
-        status: 'error'
-      };
-      setMessages(prev => [...prev, errorMessage]);
+      console.error('Error resetting chat:', error);
+      // You might want to show an error message to the user here
     }
-
-    setIsProcessing(false);
   };
 
   const handleFileUpload = async (files: FileList | null) => {
@@ -248,189 +235,45 @@ What data would you like me to help you with today?`,
     ];
 
     if (!allowedTypes.includes(file.type)) {
-      const errorMessage: Message = {
-        id: Date.now().toString(),
-        type: 'system',
-        content: 'Sorry, I only support CSV, Excel, PDF, and text files. Please upload a supported file type.',
-        timestamp: new Date(),
-        status: 'error'
-      };
-      setMessages(prev => [...prev, errorMessage]);
+      alert('Sorry, I only support CSV, Excel, PDF, and text files. Please upload a supported file type.');
       return;
     }
 
-    // Add file upload message
-    const fileMessage: Message = {
-      id: Date.now().toString(),
-      type: 'user',
-      content: `Uploaded file: ${file.name}`,
-      timestamp: new Date(),
-      file: {
-        name: file.name,
-        size: file.size,
-        type: file.type
-      }
-    };
-
-    setMessages(prev => [...prev, fileMessage]);
-    setIsProcessing(true);
-
-    // Add processing message
-    const processingMessage: Message = {
-      id: (Date.now() + 1).toString(),
-      type: 'ai',
-      content: `I'm processing your file "${file.name}"... Extracting and analyzing the data.`,
-      timestamp: new Date(),
-      status: 'processing'
-    };
-    setMessages(prev => [...prev, processingMessage]);
-
     try {
-      // Process file through document processor
-      const extractedText = await datrixAIAgent.processFile(file, user.id);
+      // Send file to document processing API
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('text', ""); // As shown in your curl example
 
-      // Analyze the extracted data
-      const analysis = await datrixAIAgent.analyzeData(extractedText, user.id);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/test/process-document`, {
+        method: 'POST',
+        body: formData
+      });
 
-      // Create analysis result message
-      const analysisMessage: Message = {
-        id: (Date.now() + 2).toString(),
-        type: 'ai',
-        content: `Excellent! I've processed your file and extracted the data. Here's what I found:
-
-**Data Type:** ${analysis.dataType.charAt(0).toUpperCase() + analysis.dataType.slice(1)}
-**Records Found:** ${analysis.recordCount}
-**Summary:** ${analysis.summary}
-
-**Recommendation:** I suggest adding this data to **${analysis.recommendedIntegration}** in the **${analysis.recommendedTable}** table.
-
-**Confidence:** ${Math.round(analysis.confidence * 100)}%
-**Reasoning:** ${analysis.reasoning}`,
-        timestamp: new Date(),
-        status: 'completed',
-        analysis
-      };
-
-      setMessages(prev => [...prev, analysisMessage]);
-
-      // If we have data to insert and good confidence, show confirmation
-      if (analysis.recordCount > 0 && analysis.confidence > 0.5) {
-        const confirmationMessage: Message = {
-          id: (Date.now() + 3).toString(),
-          type: 'confirmation',
-          content: `Would you like me to add ${analysis.recordCount} record${analysis.recordCount > 1 ? 's' : ''} to **${analysis.recommendedIntegration}.${analysis.recommendedTable}**?`,
-          timestamp: new Date(),
-          confirmationData: {
-            integration: analysis.recommendedIntegration,
-            table: analysis.recommendedTable,
-            recordCount: analysis.recordCount,
-            data: analysis.extractedData
-          }
-        };
-
-        setMessages(prev => [...prev, confirmationMessage]);
+      if (!response.ok) {
+        throw new Error(`Document processing failed: ${response.status} ${response.statusText}`);
       }
+
+      const documentData = await response.json();
+      
+      // Send the raw JSON response directly to the AI
+      const filePrompt = `I've uploaded a document. Here is the processed document data in JSON format:
+
+${JSON.stringify(documentData, null, 2)}
+`;
+
+      // Use append to send the file content directly to the AI
+      await append({
+        role: 'user',
+        content: filePrompt
+      });
+
+      // Save conversation will be handled by onFinish callback
 
     } catch (error) {
-      const errorMessage: Message = {
-        id: (Date.now() + 2).toString(),
-        type: 'system',
-        content: `Sorry, I encountered an error while processing your file: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        timestamp: new Date(),
-        status: 'error'
-      };
-      setMessages(prev => [...prev, errorMessage]);
+      console.error('File processing error:', error);
+      alert(`Sorry, I encountered an error while processing your file: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
-
-    setIsProcessing(false);
-  };
-
-  const handleConfirmation = async (messageId: string, confirmed: boolean) => {
-    const message = messages.find(m => m.id === messageId);
-    if (!message?.confirmationData) return;
-
-    setIsProcessing(true);
-
-    if (confirmed) {
-      // Add confirmation message
-      const confirmMessage: Message = {
-        id: Date.now().toString(),
-        type: 'user',
-        content: 'Yes, please proceed with adding the data.',
-        timestamp: new Date()
-      };
-      setMessages(prev => [...prev, confirmMessage]);
-
-      // Add processing message
-      const processingMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        type: 'ai',
-        content: `Processing... Adding ${message.confirmationData.recordCount} records to ${message.confirmationData.integration}.${message.confirmationData.table}`,
-        timestamp: new Date(),
-        status: 'processing'
-      };
-      setMessages(prev => [...prev, processingMessage]);
-
-      try {
-        // Execute the integration
-        const executionResult = await datrixAIAgent.executeIntegration(
-          user.id,
-          message.confirmationData.integration,
-          message.confirmationData.table,
-          message.confirmationData.data
-        );
-
-        // Create result message
-        const resultMessage: Message = {
-          id: (Date.now() + 2).toString(),
-          type: 'ai',
-          content: `${executionResult.status === 'success' ? '✅' : '❌'} **${executionResult.explanation}**
-
-**Status:** ${executionResult.status.charAt(0).toUpperCase() + executionResult.status.slice(1)}
-**Records Inserted:** ${executionResult.insertedRecords}
-**Integration:** ${message.confirmationData.integration}.${message.confirmationData.table}
-**Timestamp:** ${new Date().toLocaleString()}
-
-${executionResult.errors.length > 0 ? `**Errors:** ${executionResult.errors.join(', ')}` : ''}
-
-Is there anything else you'd like me to help you with?`,
-          timestamp: new Date(),
-          status: executionResult.status === 'success' ? 'completed' : 'error',
-          executionResult
-        };
-
-        setMessages(prev => [...prev, resultMessage]);
-
-      } catch (error) {
-        const errorMessage: Message = {
-          id: (Date.now() + 2).toString(),
-          type: 'system',
-          content: `Sorry, I encountered an error while executing the integration: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          timestamp: new Date(),
-          status: 'error'
-        };
-        setMessages(prev => [...prev, errorMessage]);
-      }
-    } else {
-      // User declined
-      const declineMessage: Message = {
-        id: Date.now().toString(),
-        type: 'user',
-        content: 'No, please don\'t add the data.',
-        timestamp: new Date()
-      };
-      setMessages(prev => [...prev, declineMessage]);
-
-      const responseMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        type: 'ai',
-        content: 'Understood! I won\'t add the data to your integration. Is there anything else you\'d like me to help you with?',
-        timestamp: new Date()
-      };
-      setMessages(prev => [...prev, responseMessage]);
-    }
-
-    setIsProcessing(false);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -590,13 +433,39 @@ Is there anything else you'd like me to help you with?`,
 
               {/* Chat Header - Fixed */}
               <div className="p-6 border-b border-[#6e1d27]/20 flex-shrink-0">
-                <h1 className="text-2xl font-bold text-[#3d0e15] font-ibm-plex hand-drawn-text flex items-center">
-                  <Bot className="mr-3 h-6 w-6 text-[#6e1d27]" />
-                  DatrixAI Assistant
-                </h1>
-                <p className="text-[#6e1d27] font-ibm-plex mt-1">
-                  Your intelligent data processing companion
-                </p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h1 className="text-2xl font-bold text-[#3d0e15] font-ibm-plex hand-drawn-text flex items-center">
+                      <Bot className="mr-3 h-6 w-6 text-[#6e1d27]" />
+                      DatrixAI Assistant
+                    </h1>
+                    <p className="text-[#6e1d27] font-ibm-plex mt-1">
+                      Your intelligent data processing companion
+                    </p>
+                  </div>
+                  <div className="flex items-center space-x-4">
+                    {/* Reset Chat Button */}
+                    <Button
+                      onClick={resetChat}
+                      variant="outline"
+                      size="sm"
+                      className="hand-drawn-border border-2 border-[#6e1d27]/30 text-[#6e1d27] hover:bg-[#6e1d27]/10 hover:border-[#6e1d27] font-ibm-plex"
+                      disabled={messages.length === 0 || isLoading}
+                      title="Reset chat and clear all messages"
+                    >
+                      <RotateCcw className="w-4 h-4 mr-2" />
+                      Reset Chat
+                    </Button>
+                    
+                    {/* Saving Indicator */}
+                    {isSaving && (
+                      <div className="flex items-center text-sm text-[#6e1d27]/60 font-ibm-plex">
+                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                        Saving...
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
 
               {/* Messages Area - Scrollable with proper height */}
@@ -617,99 +486,38 @@ Is there anything else you'd like me to help you with?`,
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.4, delay: index * 0.05 }}
-                      className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
+                      className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                     >
-                      <div className={`max-w-[80%] ${message.type === 'user' ? 'order-2' : 'order-1'}`}>
-                        <div className={`flex items-start space-x-3 ${message.type === 'user' ? 'flex-row-reverse space-x-reverse' : ''}`}>
+                      <div className={`max-w-[80%] ${message.role === 'user' ? 'order-2' : 'order-1'}`}>
+                        <div className={`flex items-start space-x-3 ${message.role === 'user' ? 'flex-row-reverse space-x-reverse' : ''}`}>
                           {/* Avatar */}
                           <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                            message.type === 'user' 
+                            message.role === 'user' 
                               ? 'bg-[#6e1d27] text-white' 
-                              : message.type === 'ai'
-                              ? 'bg-[#6e1d27]/10 text-[#6e1d27]'
-                              : message.type === 'confirmation'
-                              ? 'bg-blue-100 text-blue-600'
-                              : 'bg-yellow-100 text-yellow-600'
+                              : 'bg-[#6e1d27]/10 text-[#6e1d27]'
                           }`}>
-                            {message.type === 'user' ? (
+                            {message.role === 'user' ? (
                               <User className="w-4 h-4" />
-                            ) : message.type === 'ai' ? (
-                              <Bot className="w-4 h-4" />
-                            ) : message.type === 'confirmation' ? (
-                              <CheckCircle className="w-4 h-4" />
                             ) : (
-                              <AlertCircle className="w-4 h-4" />
+                              <Bot className="w-4 h-4" />
                             )}
                           </div>
 
                           {/* Message Content */}
-                          <div className={`flex-1 ${message.type === 'user' ? 'text-right' : 'text-left'}`}>
+                          <div className={`flex-1 ${message.role === 'user' ? 'text-right' : 'text-left'}`}>
                             <div className={`inline-block p-4 rounded-lg ${
-                              message.type === 'user'
+                              message.role === 'user'
                                 ? 'bg-[#6e1d27] text-white hand-drawn-border'
-                                : message.type === 'ai'
-                                ? 'bg-white border border-[#6e1d27]/20 text-[#3d0e15] hand-drawn-border'
-                                : message.type === 'confirmation'
-                                ? 'bg-blue-50 border border-blue-200 text-blue-800'
-                                : 'bg-yellow-50 border border-yellow-200 text-yellow-800'
+                                : 'bg-white border border-[#6e1d27]/20 text-[#3d0e15] hand-drawn-border'
                             }`}>
-                              {/* File attachment display */}
-                              {message.file && (
-                                <div className="mb-3 p-3 bg-white/50 rounded-lg border border-[#6e1d27]/20 flex items-center space-x-3">
-                                  {(() => {
-                                    const FileIcon = getFileIcon(message.file.type);
-                                    return <FileIcon className="w-5 h-5 text-[#6e1d27]" />;
-                                  })()}
-                                  <div className="flex-1">
-                                    <p className="font-semibold text-[#3d0e15] font-ibm-plex text-sm">
-                                      {message.file.name}
-                                    </p>
-                                    <p className="text-xs text-[#6e1d27] font-ibm-plex">
-                                      {formatFileSize(message.file.size)}
-                                    </p>
-                                  </div>
-                                </div>
-                              )}
-
                               <div className="font-ibm-plex whitespace-pre-line">
                                 {message.content.split('**').map((part, i) => 
                                   i % 2 === 0 ? part : <strong key={i}>{part}</strong>
                                 )}
                               </div>
-
-                              {/* Processing status */}
-                              {message.status === 'processing' && (
-                                <div className="mt-3 flex items-center space-x-2 text-blue-600">
-                                  <Loader2 className="w-4 h-4 animate-spin" />
-                                  <span className="text-sm font-ibm-plex">Processing...</span>
-                                </div>
-                              )}
-
-                              {/* Confirmation buttons */}
-                              {message.type === 'confirmation' && message.confirmationData && (
-                                <div className="mt-4 flex space-x-3">
-                                  <Button
-                                    onClick={() => handleConfirmation(message.id, true)}
-                                    disabled={isProcessing}
-                                    className="hand-drawn-button bg-green-600 hover:bg-green-700 text-white font-ibm-plex flex items-center"
-                                  >
-                                    <ThumbsUp className="w-4 h-4 mr-2" />
-                                    Yes, Proceed
-                                  </Button>
-                                  <Button
-                                    onClick={() => handleConfirmation(message.id, false)}
-                                    disabled={isProcessing}
-                                    variant="outline"
-                                    className="hand-drawn-border border-2 border-red-500 text-red-600 hover:bg-red-50 font-ibm-plex flex items-center"
-                                  >
-                                    <ThumbsDown className="w-4 h-4 mr-2" />
-                                    No, Cancel
-                                  </Button>
-                                </div>
-                              )}
                             </div>
                             <p className="text-xs text-[#6e1d27]/60 font-ibm-plex mt-1">
-                              {message.timestamp.toLocaleTimeString()}
+                              {new Date().toLocaleTimeString()}
                             </p>
                           </div>
                         </div>
@@ -719,7 +527,7 @@ Is there anything else you'd like me to help you with?`,
                 </AnimatePresence>
 
                 {/* Processing indicator */}
-                {isProcessing && (
+                {isLoading && (
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -770,36 +578,38 @@ Is there anything else you'd like me to help you with?`,
 
               {/* Input Area - Fixed at bottom */}
               <div className="p-6 border-t border-[#6e1d27]/20 flex-shrink-0">
-                <div className="flex items-end space-x-3">
-                  <div className="flex-1">
-                    <div className="relative">
-                      <Input
-                        value={inputText}
-                        onChange={(e) => setInputText(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                        placeholder="Type your data or describe what you want to organize..."
-                        className="hand-drawn-input bg-white/80 border-2 border-[#6e1d27] text-[#3d0e15] placeholder-[#6e1d27]/60 font-ibm-plex pr-12"
-                        disabled={isProcessing}
-                      />
-                      <Button
-                        onClick={() => fileInputRef.current?.click()}
-                        variant="ghost"
-                        size="sm"
-                        className="absolute right-2 top-1/2 transform -translate-y-1/2 text-[#6e1d27] hover:text-[#3d0e15] hover:bg-[#6e1d27]/10"
-                        disabled={isProcessing}
-                      >
-                        <Paperclip className="w-4 h-4" />
-                      </Button>
+                <form onSubmit={handleSubmit}>
+                  <div className="flex items-end space-x-3">
+                    <div className="flex-1">
+                      <div className="relative">
+                        <Input
+                          value={input}
+                          onChange={handleInputChange}
+                          placeholder="Type your data or describe what you want to organize..."
+                          className="hand-drawn-input bg-white/80 border-2 border-[#6e1d27] text-[#3d0e15] placeholder-[#6e1d27]/60 font-ibm-plex pr-12"
+                          disabled={isLoading}
+                        />
+                        <Button
+                          onClick={() => fileInputRef.current?.click()}
+                          variant="ghost"
+                          size="sm"
+                          type="button"
+                          className="absolute right-2 top-1/2 transform -translate-y-1/2 text-[#6e1d27] hover:text-[#3d0e15] hover:bg-[#6e1d27]/10"
+                          disabled={isLoading}
+                        >
+                          <Paperclip className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
+                    <Button
+                      type="submit"
+                      disabled={!input.trim() || isLoading}
+                      className="hand-drawn-button bg-[#6e1d27] hover:bg-[#912d3c] text-white font-ibm-plex disabled:opacity-50"
+                    >
+                      <Send className="w-4 h-4" />
+                    </Button>
                   </div>
-                  <Button
-                    onClick={handleSendMessage}
-                    disabled={!inputText.trim() || isProcessing}
-                    className="hand-drawn-button bg-[#6e1d27] hover:bg-[#912d3c] text-white font-ibm-plex disabled:opacity-50"
-                  >
-                    <Send className="w-4 h-4" />
-                  </Button>
-                </div>
+                </form>
 
                 {/* File input */}
                 <input
