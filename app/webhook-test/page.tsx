@@ -24,6 +24,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import { OnboardingNavbar } from '@/components/Navbar';
+import { Textarea } from '@/components/ui/textarea';
 
 interface WebhookLog {
   id: string;
@@ -47,6 +48,14 @@ export default function WebhookTestPage() {
   const [copied, setCopied] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState('business');
   const router = useRouter();
+  // Airtable test state
+  const [airtableTab, setAirtableTab] = useState<'bases' | 'tables' | 'records'>('bases');
+  const [airtableToken, setAirtableToken] = useState('');
+  const [airtableBaseId, setAirtableBaseId] = useState('');
+  const [airtableTableIdOrName, setAirtableTableIdOrName] = useState('');
+  const [airtableRecords, setAirtableRecords] = useState('[{"fields": {"Name": "John Doe"}}]');
+  const [airtableResponse, setAirtableResponse] = useState<any>(null);
+  const [airtableLoading, setAirtableLoading] = useState(false);
 
   const emailTemplates = {
     business: {
@@ -231,6 +240,38 @@ export default function WebhookTestPage() {
     setLogs([]);
   };
 
+  const testAirtable = async () => {
+    setAirtableLoading(true);
+    setAirtableResponse(null);
+    try {
+      let url = '';
+      let options: any = { method: 'GET' };
+      if (airtableTab === 'bases') {
+        url = `/api/airtable/bases?token=${encodeURIComponent(airtableToken)}`;
+      } else if (airtableTab === 'tables') {
+        url = `/api/airtable/tables?token=${encodeURIComponent(airtableToken)}&baseId=${encodeURIComponent(airtableBaseId)}`;
+      } else if (airtableTab === 'records') {
+        url = `/api/airtable/records`;
+        options = {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            token: airtableToken,
+            baseId: airtableBaseId,
+            tableIdOrName: airtableTableIdOrName,
+            records: JSON.parse(airtableRecords)
+          })
+        };
+      }
+      const res = await fetch(url, options);
+      const data = await res.json();
+      setAirtableResponse(data);
+    } catch (e: any) {
+      setAirtableResponse({ error: e.message });
+    }
+    setAirtableLoading(false);
+  };
+
   if (!mounted || loading) {
     return null;
   }
@@ -271,8 +312,7 @@ export default function WebhookTestPage() {
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
             {/* Left Column - Webhook Configuration */}
             <motion.div
               initial={{ opacity: 0, x: -30 }}
@@ -552,6 +592,44 @@ export default function WebhookTestPage() {
                 </div>
               </div>
             </motion.div>
+          </div>
+
+          {/* Airtable API Tester Section */}
+          <div className="hand-drawn-container bg-white/60 backdrop-blur-sm p-6 relative max-w-xl mx-auto mb-12">
+            <h2 className="text-2xl font-bold text-[#3d0e15] font-ibm-plex hand-drawn-text mb-6 flex items-center">
+              <Globe className="mr-3 h-6 w-6 text-[#6e1d27]" />
+              Airtable API Tester
+            </h2>
+            <div className="space-y-4 mb-4">
+              <Label>Airtable Token</Label>
+              <Input value={airtableToken} onChange={e => setAirtableToken(e.target.value)} placeholder="pat..." />
+              <Label>Base ID</Label>
+              <Input value={airtableBaseId} onChange={e => setAirtableBaseId(e.target.value)} placeholder="app..." />
+              <Label>Endpoint</Label>
+              <select className="hand-drawn-input border-2 border-[#6e1d27] w-full" value={airtableTab} onChange={e => setAirtableTab(e.target.value as any)}>
+                <option value="bases">Get Bases</option>
+                <option value="tables">Get Tables</option>
+                <option value="records">Create Record</option>
+              </select>
+              {airtableTab === 'records' && (
+                <>
+                  <Label>Table ID or Name</Label>
+                  <Input value={airtableTableIdOrName} onChange={e => setAirtableTableIdOrName(e.target.value)} placeholder="tbl... or Table Name" />
+                  <Label>Records (JSON Array)</Label>
+                  <Textarea value={airtableRecords} onChange={e => setAirtableRecords(e.target.value)} rows={5} />
+                </>
+              )}
+            </div>
+            <Button onClick={testAirtable} disabled={airtableLoading} className="w-full hand-drawn-button bg-[#6e1d27] hover:bg-[#912d3c] text-white font-ibm-plex mb-4">
+              {airtableLoading ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+              Test Airtable Endpoint
+            </Button>
+            {airtableResponse && (
+              <div className="mt-4">
+                <Label>Response</Label>
+                <pre className="bg-gray-50 p-3 rounded border text-xs max-h-60 overflow-auto font-mono">{JSON.stringify(airtableResponse, null, 2)}</pre>
+              </div>
+            )}
           </div>
 
           {/* Console Instructions */}
