@@ -18,7 +18,8 @@ import {
   RefreshCw,
   Brain,
   Mail,
-  Bot
+  Bot,
+  Database
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
@@ -56,6 +57,13 @@ export default function WebhookTestPage() {
   const [airtableRecords, setAirtableRecords] = useState('[{"fields": {"Name": "John Doe"}}]');
   const [airtableResponse, setAirtableResponse] = useState<any>(null);
   const [airtableLoading, setAirtableLoading] = useState(false);
+  // PostgreSQL test state
+  const [pgEndpoint, setPgEndpoint] = useState<'tables' | 'schema' | 'insert'>('tables');
+  const [pgConn, setPgConn] = useState('');
+  const [pgTable, setPgTable] = useState('');
+  const [pgRows, setPgRows] = useState('[{"name": "John Doe"}]');
+  const [pgResponse, setPgResponse] = useState<any>(null);
+  const [pgLoading, setPgLoading] = useState(false);
 
   const emailTemplates = {
     business: {
@@ -270,6 +278,35 @@ export default function WebhookTestPage() {
       setAirtableResponse({ error: e.message });
     }
     setAirtableLoading(false);
+  };
+
+  const testPostgres = async () => {
+    setPgLoading(true);
+    setPgResponse(null);
+    try {
+      let url = '';
+      let body: any = { connectionString: pgConn };
+      if (pgEndpoint === 'tables') {
+        url = '/api/postgresql/get-tables';
+      } else if (pgEndpoint === 'schema') {
+        url = '/api/postgresql/get-table-schema';
+        body.tableName = pgTable;
+      } else if (pgEndpoint === 'insert') {
+        url = '/api/postgresql/insert-rows';
+        body.tableName = pgTable;
+        body.rows = JSON.parse(pgRows);
+      }
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      setPgResponse(data);
+    } catch (e: any) {
+      setPgResponse({ error: e.message });
+    }
+    setPgLoading(false);
   };
 
   if (!mounted || loading) {
@@ -652,6 +689,81 @@ export default function WebhookTestPage() {
                 <div className="mt-4">
                   <Label className="text-[#3d0e15] font-ibm-plex font-medium hand-drawn-text">Response</Label>
                   <pre className="bg-gray-50 p-3 rounded border text-xs max-h-60 overflow-auto font-mono">{JSON.stringify(airtableResponse, null, 2)}</pre>
+                </div>
+              )}
+              <div className="absolute bottom-2 left-2 w-6 h-3 opacity-20">
+                <svg viewBox="0 0 32 16" className="w-full h-full text-[#6e1d27]">
+                  <path d="M2 8 Q8 2 16 8 T30 8" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="hand-drawn-path" />
+                </svg>
+              </div>
+              <div className="absolute bottom-2 right-2 w-4 h-4 opacity-20">
+                <svg viewBox="0 0 24 24" className="w-full h-full text-[#6e1d27]">
+                  <path d="M12 2 L22 12 L12 22 L2 12 Z" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="hand-drawn-path" />
+                </svg>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* PostgreSQL Tester Section */}
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+          >
+            <div className="hand-drawn-container bg-white/60 backdrop-blur-sm p-6 relative mb-12">
+              <div className="absolute top-2 left-2 w-4 h-4 opacity-30">
+                <svg viewBox="0 0 24 24" className="w-full h-full text-[#6e1d27]">
+                  <path d="M3 3 L21 3 L21 21 L3 21 Z" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="hand-drawn-path" />
+                </svg>
+              </div>
+              <div className="absolute top-2 right-2 w-4 h-4 opacity-30">
+                <svg viewBox="0 0 24 24" className="w-full h-full text-[#6e1d27]">
+                  <circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" strokeWidth="1.5" className="hand-drawn-path" />
+                </svg>
+              </div>
+              <h2 className="text-2xl font-bold text-[#3d0e15] font-ibm-plex hand-drawn-text mb-6 flex items-center">
+                <Database className="mr-3 h-6 w-6 text-[#6e1d27]" />
+                PostgreSQL API Tester
+              </h2>
+              <div className="space-y-4 mb-6">
+                <Label className="text-[#3d0e15] font-ibm-plex font-medium hand-drawn-text">Connection String</Label>
+                <Input value={pgConn} onChange={e => setPgConn(e.target.value)} placeholder="postgres://user:pass@host:port/db" className="hand-drawn-input bg-white/80 border-2 border-[#6e1d27] text-[#3d0e15] font-ibm-plex" />
+                <Label className="text-[#3d0e15] font-ibm-plex font-medium hand-drawn-text">Endpoint</Label>
+                <select className="hand-drawn-input bg-white/80 border-2 border-[#6e1d27] text-[#3d0e15] font-ibm-plex w-full" value={pgEndpoint} onChange={e => setPgEndpoint(e.target.value as any)}>
+                  <option value="tables">Get Tables</option>
+                  <option value="schema">Get Table Schema</option>
+                  <option value="insert">Insert Rows</option>
+                </select>
+                {(pgEndpoint === 'schema' || pgEndpoint === 'insert') && (
+                  <>
+                    <Label className="text-[#3d0e15] font-ibm-plex font-medium hand-drawn-text">Table Name</Label>
+                    <Input value={pgTable} onChange={e => setPgTable(e.target.value)} placeholder="table_name" className="hand-drawn-input bg-white/80 border-2 border-[#6e1d27] text-[#3d0e15] font-ibm-plex" />
+                  </>
+                )}
+                {pgEndpoint === 'insert' && (
+                  <>
+                    <Label className="text-[#3d0e15] font-ibm-plex font-medium hand-drawn-text">Rows (JSON Array)</Label>
+                    <Textarea value={pgRows} onChange={e => setPgRows(e.target.value)} rows={5} className="hand-drawn-input bg-white/80 border-2 border-[#6e1d27] text-[#3d0e15] font-ibm-plex font-mono text-sm" />
+                  </>
+                )}
+              </div>
+              <Button onClick={testPostgres} disabled={pgLoading} className="w-full hand-drawn-button bg-[#6e1d27] hover:bg-[#912d3c] text-white font-ibm-plex">
+                {pgLoading ? (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <Send className="mr-2 h-4 w-4" />
+                    Test PostgreSQL Endpoint
+                  </>
+                )}
+              </Button>
+              {pgResponse && (
+                <div className="mt-4">
+                  <Label className="text-[#3d0e15] font-ibm-plex font-medium hand-drawn-text">Response</Label>
+                  <pre className="bg-gray-50 p-3 rounded border text-xs max-h-60 overflow-auto font-mono">{JSON.stringify(pgResponse, null, 2)}</pre>
                 </div>
               )}
               <div className="absolute bottom-2 left-2 w-6 h-3 opacity-20">
