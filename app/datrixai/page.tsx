@@ -255,7 +255,7 @@ export default function DatrixAIPage() {
       }
 
       const documentData = await response.json();
-      
+
       // Send the raw JSON response directly to the AI
       const filePrompt = `I've uploaded a document. Here is the processed document data in JSON format:
 
@@ -273,7 +273,7 @@ ${JSON.stringify(documentData, null, 2)}
     } catch (error) {
       console.error('File processing error:', error);
       alert(`Sorry, I encountered an error while processing your file: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
+      }
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -435,13 +435,13 @@ ${JSON.stringify(documentData, null, 2)}
               <div className="p-6 border-b border-[#6e1d27]/20 flex-shrink-0">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h1 className="text-2xl font-bold text-[#3d0e15] font-ibm-plex hand-drawn-text flex items-center">
-                      <Bot className="mr-3 h-6 w-6 text-[#6e1d27]" />
-                      DatrixAI Assistant
-                    </h1>
-                    <p className="text-[#6e1d27] font-ibm-plex mt-1">
-                      Your intelligent data processing companion
-                    </p>
+                <h1 className="text-2xl font-bold text-[#3d0e15] font-ibm-plex hand-drawn-text flex items-center">
+                  <Bot className="mr-3 h-6 w-6 text-[#6e1d27]" />
+                  DatrixAI Assistant
+                </h1>
+                <p className="text-[#6e1d27] font-ibm-plex mt-1">
+                  Your intelligent data processing companion
+                </p>
                   </div>
                   <div className="flex items-center space-x-4">
                     {/* Reset Chat Button */}
@@ -579,36 +579,36 @@ ${JSON.stringify(documentData, null, 2)}
               {/* Input Area - Fixed at bottom */}
               <div className="p-6 border-t border-[#6e1d27]/20 flex-shrink-0">
                 <form onSubmit={handleSubmit}>
-                  <div className="flex items-end space-x-3">
-                    <div className="flex-1">
-                      <div className="relative">
-                        <Input
+                <div className="flex items-end space-x-3">
+                  <div className="flex-1">
+                    <div className="relative">
+                      <Input
                           value={input}
                           onChange={handleInputChange}
-                          placeholder="Type your data or describe what you want to organize..."
-                          className="hand-drawn-input bg-white/80 border-2 border-[#6e1d27] text-[#3d0e15] placeholder-[#6e1d27]/60 font-ibm-plex pr-12"
+                        placeholder="Type your data or describe what you want to organize..."
+                        className="hand-drawn-input bg-white/80 border-2 border-[#6e1d27] text-[#3d0e15] placeholder-[#6e1d27]/60 font-ibm-plex pr-12"
                           disabled={isLoading}
-                        />
-                        <Button
-                          onClick={() => fileInputRef.current?.click()}
-                          variant="ghost"
-                          size="sm"
+                      />
+                      <Button
+                        onClick={() => fileInputRef.current?.click()}
+                        variant="ghost"
+                        size="sm"
                           type="button"
-                          className="absolute right-2 top-1/2 transform -translate-y-1/2 text-[#6e1d27] hover:text-[#3d0e15] hover:bg-[#6e1d27]/10"
+                        className="absolute right-2 top-1/2 transform -translate-y-1/2 text-[#6e1d27] hover:text-[#3d0e15] hover:bg-[#6e1d27]/10"
                           disabled={isLoading}
-                        >
-                          <Paperclip className="w-4 h-4" />
-                        </Button>
-                      </div>
+                      >
+                        <Paperclip className="w-4 h-4" />
+                      </Button>
                     </div>
-                    <Button
+                  </div>
+                  <Button
                       type="submit"
                       disabled={!input.trim() || isLoading}
-                      className="hand-drawn-button bg-[#6e1d27] hover:bg-[#912d3c] text-white font-ibm-plex disabled:opacity-50"
-                    >
-                      <Send className="w-4 h-4" />
-                    </Button>
-                  </div>
+                    className="hand-drawn-button bg-[#6e1d27] hover:bg-[#912d3c] text-white font-ibm-plex disabled:opacity-50"
+                  >
+                    <Send className="w-4 h-4" />
+                  </Button>
+                </div>
                 </form>
 
                 {/* File input */}
