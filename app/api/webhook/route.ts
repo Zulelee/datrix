@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { emailAgent } from '@/lib/ai-agent';
-import { integrationAgent } from '@/lib/integration-agent';
 
 export async function POST(request: NextRequest) {
   try {
@@ -51,13 +50,7 @@ export async function POST(request: NextRequest) {
     let integrationResult = null;
 
     // Detect if the webhook contains email data
-    const isEmailData = body.type === 'email' || 
-                       body.event === 'email_received' ||
-                       body.subject || 
-                       body.from || 
-                       body.sender ||
-                       body.email_data ||
-                       (body.data && (body.data.subject || body.data.from || body.data.sender));
+    const isEmailData = true;
 
     if (isEmailData) {
       console.log('\n📧 EMAIL DATA DETECTED - ACTIVATING AI AGENT');
@@ -67,7 +60,7 @@ export async function POST(request: NextRequest) {
         // Extract email data from various possible structures
         const emailData = body.email_data || body.data || body;
         
-        // Process with AI agent
+        // Process with AI agent that decides if the email should be processed further
         processingResult = await emailAgent.processEmailDecision(emailData);
         aiAnalysis = processingResult.decision;
 
@@ -102,40 +95,9 @@ export async function POST(request: NextRequest) {
               console.log('🔗 SENDING TO INTEGRATION AGENT');
               console.log('===============================');
               
-              try {
-                // For demo purposes, we'll use a mock user ID
-                // In production, you'd extract this from authentication headers or the request
-                const userId = 'demo-user-123';
-                
-                integrationResult = await integrationAgent.processDocumentData(
-                  documentProcessingResult.data, 
-                  userId
-                );
-                
-                console.log('✅ INTEGRATION PROCESSING COMPLETE');
-                console.log('==================================');
-                console.log('🔌 Integration:', integrationResult.selectedIntegration);
-                console.log('📋 Table:', integrationResult.tableName);
-                console.log('✅ Status:', integrationResult.status);
-                console.log('📝 Explanation:', integrationResult.explanation);
-                console.log('==================================\n');
-                
-              } catch (integrationError) {
-                console.error('❌ INTEGRATION AGENT ERROR');
-                console.error('==========================');
-                console.error('Error:', integrationError);
-                console.error('==========================\n');
-                
-                integrationResult = {
-                  selectedIntegration: 'none',
-                  tableName: 'none',
-                  mappedData: {},
-                  confidence: 0.0,
-                  reasoning: 'Integration processing failed',
-                  status: 'error',
-                  explanation: 'Integration agent encountered an error'
-                };
-              }
+              // TODO: Send the document processing result to an agent that is similar to datrixai 
+              // and sends the data to the appropriate integration
+              
             } else {
               console.log('⏸️  INTEGRATION SKIPPED - DOCUMENT PROCESSING FAILED');
               console.log('===================================================');
