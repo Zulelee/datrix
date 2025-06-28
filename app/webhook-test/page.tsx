@@ -36,6 +36,8 @@ interface WebhookLog {
   response: any;
   isEmailData?: boolean;
   aiAnalysis?: any;
+  documentProcessing?: any;
+  integration?: any;
 }
 
 export default function WebhookTestPage() {
@@ -145,6 +147,69 @@ export default function WebhookTestPage() {
           priority: "low"
         }
       }
+    },
+    googleAppsScript: {
+      name: 'Google Apps Script Sales Activity',
+      data: {
+        "timestamp": "2025-06-28T20:54:22.176Z",
+        "source": "google-apps-script",
+        "data": {
+          "action": "fetch_emails",
+          "emailsProcessed": 1,
+          "searchQuery": "is:unread",
+          "data": [
+            {
+              "threadId": "197b851aa9d32887",
+              "messageId": "197b851c4832c6f2",
+              "subject": "Sales Activity Update – Acme Corp – Demo Follow-Up",
+              "sender": "datrix <datrix.saledata@gmail.com>",
+              "recipient": "datrix <datrix.saledata@gmail.com>",
+              "date": "2025-06-28T20:54:15.000Z",
+              "isRead": false,
+              "bodyPlainText": "Hi Sarah,\r\n\r\nHere's the summary of my latest sales activity:\r\n------------------------------\r\n\r\n*Sales Representative:* Zulekha Imtiaz\r\n*Activity Date:* June 28, 2025\r\n*Activity Type:* Product Demo & Needs Assessment Call\r\n*Duration:* 45 minutes\r\n*Outcome:* Warm Lead – Interested in Next Steps\r\n*Notes:\r\n\r\n   -\r\n\r\n   Walked *Jason Reed through key features of Quantum Analytics.\r\n   -\r\n\r\n   Discussed challenges around manual data entry and siloed customer\r\n   reports.\r\n   -\r\n\r\n   Jason showed strong interest in our automated reporting and AI-driven\r\n   insights.\r\n   -\r\n\r\n   Had questions around integration with Salesforce and scalability for\r\n   their enterprise clients.\r\n\r\n*Related Lead:* Jason Reed – jason.reed@acmecorp.com\r\n*Related Customer:* Acme Corp – contact@acmecorp.com\r\n*Lead Status:* Engaged – Awaiting Proposal\r\n*Customer Status:* In Evaluation\r\n*Outcome Summary:\r\nAcme Corp is comparing Quantum Analytics to Tableau and Looker. They were\r\nimpressed by the simplicity of setup, the real-time dashboard capabilities,\r\nand our lower learning curve. Requested a proposal including enterprise\r\npricing and an implementation roadmap.\r\n\r\n*Next Best Action:\r\n\r\n   -\r\n\r\n   Send formal proposal and pricing by July 1st\r\n   -\r\n\r\n   Schedule technical Q&A session with our solutions engineer on July 3rd\r\n\r\n*Sales Pipeline Stage:* Proposal Sent – Mid Funnel\r\n*Sales Reports:* Logged in CRM under Q3 Strategic Accounts\r\n*Opportunity ID:* QA-ACME-0097\r\n------------------------------\r\n\r\nLet me know if you'd like me to loop in Alex (Solutions Engineer) for the\r\nfollow-up call.\r\n\r\nBest,\r\n*Zulekha Imtiaz*\r\nSales Representative\r\nQuantum Analytics\r\nzulekha@quantumanalytics.com | ‪+1 (234) 555-0199‬\r\nquantumanalytics.com <https://www.quantumanalytics.com/>\r\n",
+              "bodyHtml": "<div dir=\"ltr\"><p>Hi Sarah,</p><p>Here's the summary of my latest sales activity:</p><hr><p><strong>Sales Representative:</strong> Zulekha Imtiaz<br><strong>Activity Date:</strong> June 28, 2025<br><strong>Activity Type:</strong> Product Demo &amp; Needs Assessment Call<br><strong>Duration:</strong> 45 minutes<br><strong>Outcome:</strong> Warm Lead – Interested in Next Steps<br><strong>Notes:</strong></p><ul><li style=\"margin-left:15px\"><p>Walked <strong>Jason Reed</strong> through key features of <strong>Quantum Analytics</strong>.</p></li><li style=\"margin-left:15px\"><p>Discussed challenges around manual data entry and siloed customer reports.</p></li><li style=\"margin-left:15px\"><p>Jason showed strong interest in our automated reporting and AI-driven insights.</p></li><li style=\"margin-left:15px\"><p>Had questions around integration with Salesforce and scalability for their enterprise clients.</p></li></ul><p><strong>Related Lead:</strong> Jason Reed – <a rel=\"noopener\">jason.reed@acmecorp.com</a><br><strong>Related Customer:</strong> Acme Corp – <a rel=\"noopener\">contact@acmecorp.com</a><br><strong>Lead Status:</strong> Engaged – Awaiting Proposal<br><strong>Customer Status:</strong> In Evaluation<br><strong>Outcome Summary:</strong><br>Acme Corp is comparing Quantum Analytics to Tableau and Looker. They were impressed by the simplicity of setup, the real-time dashboard capabilities, and our lower learning curve. Requested a proposal including enterprise pricing and an implementation roadmap.</p><p><strong>Next Best Action:</strong></p><ul><li style=\"margin-left:15px\"><p>Send formal proposal and pricing by <strong>July 1st</strong></p></li><li style=\"margin-left:15px\"><p>Schedule technical Q&amp;A session with our solutions engineer on <strong>July 3rd</strong></p></li></ul><p><strong>Sales Pipeline Stage:</strong> Proposal Sent – Mid Funnel<br><strong>Sales Reports:</strong> Logged in CRM under <em>Q3 Strategic Accounts</em><br><strong>Opportunity ID:</strong> QA-ACME-0097</p><hr><p>Let me know if you'd like me to loop in Alex (Solutions Engineer) for the follow-up call.</p><p>Best,<br><strong>Zulekha Imtiaz</strong><br>Sales Representative<br>Quantum Analytics<br><a rel=\"noopener\" href=\"https://www.quantumanalytics.com/\" target=\"_blank\">quantumanalytics.com</a></p></div>\r\n",
+              "attachments": []
+            }
+          ]
+        }
+      }
+    },
+    googleAppsScriptWithAttachments: {
+      name: 'Google Apps Script with Attachments',
+      data: {
+        "timestamp": "2025-06-28T21:39:24.454Z",
+        "source": "google-apps-script",
+        "data": {
+          "action": "fetch_emails",
+          "emailsProcessed": 1,
+          "searchQuery": "is:unread",
+          "data": [
+            {
+              "threadId": "197b87a2c56be8f0",
+              "messageId": "197b87ae552b6cfa",
+              "subject": "Sales Activity Update – Acme Corp – Demo Follow-Up",
+              "sender": "datrix <datrix.saledata@gmail.com>",
+              "recipient": "datrix <datrix.saledata@gmail.com>",
+              "date": "2025-06-28T21:39:09.000Z",
+              "isRead": false,
+              "bodyPlainText": "Hi Sarah,\r\n\r\nHere's the summary of my latest sales activity:\r\n------------------------------\r\n\r\n*Sales Representative:* Zulekha Imtiaz\r\n*Activity Date:* June 28, 2025\r\n*Activity Type:* Product Demo & Needs Assessment Call\r\n*Duration:* 45 minutes\r\n*Outcome:* Warm Lead – Interested in Next Steps\r\n*Notes:\r\n\r\n   -\r\n\r\n   Walked *Jason Reed through key features of Quantum Analytics.\r\n   -\r\n\r\n   Discussed challenges around manual data entry and siloed customer\r\n   reports.\r\n   -\r\n\r\n   Jason showed strong interest in our automated reporting and AI-driven\r\n   insights.\r\n   -\r\n\r\n   Had questions around integration with Salesforce and scalability for\r\n   their enterprise clients.\r\n\r\n*Related Lead:* Jason Reed – jason.reed@acmecorp.com\r\n*Related Customer:* Acme Corp – contact@acmecorp.com\r\n*Lead Status:* Engaged – Awaiting Proposal\r\n*Customer Status:* In Evaluation\r\n*Outcome Summary:\r\nAcme Corp is comparing Quantum Analytics to Tableau and Looker. They were\r\nimpressed by the simplicity of setup, the real-time dashboard capabilities,\r\nand our lower learning curve. Requested a proposal including enterprise\r\npricing and an implementation roadmap.\r\n\r\n*Next Best Action:\r\n\r\n   -\r\n\r\n   Send formal proposal and pricing by July 1st\r\n   -\r\n\r\n   Schedule technical Q&A session with our solutions engineer on July 3rd\r\n\r\n*Sales Pipeline Stage:* Proposal Sent – Mid Funnel\r\n*Sales Reports:* Logged in CRM under Q3 Strategic Accounts\r\n*Opportunity ID:* QA-ACME-0097\r\n------------------------------\r\n\r\nLet me know if you'd like me to loop in Alex (Solutions Engineer) for the\r\nfollow-up call.\r\n\r\nBest,\r\n*Zulekha Imtiaz*\r\nSales Representative\r\nQuantum Analytics\r\nzulekha@quantumanalytics.com | ‪+1 (234) 555-0199‬\r\nquantumanalytics.com <https://www.quantumanalytics.com/>\r\n",
+              "bodyHtml": "<div dir=\"ltr\"><p>Hi Sarah,</p><p>Here's the summary of my latest sales activity:</p><hr><p><strong>Sales Representative:</strong> Zulekha Imtiaz<br><strong>Activity Date:</strong> June 28, 2025<br><strong>Activity Type:</strong> Product Demo &amp; Needs Assessment Call<br><strong>Duration:</strong> 45 minutes<br><strong>Outcome:</strong> Warm Lead – Interested in Next Steps<br><strong>Notes:</strong></p><ul><li style=\"margin-left:15px\"><p>Walked <strong>Jason Reed</strong> through key features of <strong>Quantum Analytics</strong>.</p></li><li style=\"margin-left:15px\"><p>Discussed challenges around manual data entry and siloed customer reports.</p></li><li style=\"margin-left:15px\"><p>Jason showed strong interest in our automated reporting and AI-driven insights.</p></li><li style=\"margin-left:15px\"><p>Had questions around integration with Salesforce and scalability for their enterprise clients.</p></li></ul><p><strong>Related Lead:</strong> Jason Reed – <a rel=\"noopener\">jason.reed@acmecorp.com</a><br><strong>Related Customer:</strong> Acme Corp – <a rel=\"noopener\">contact@acmecorp.com</a><br><strong>Lead Status:</strong> Engaged – Awaiting Proposal<br><strong>Customer Status:</strong> In Evaluation<br><strong>Outcome Summary:</strong><br>Acme Corp is comparing Quantum Analytics to Tableau and Looker. They were impressed by the simplicity of setup, the real-time dashboard capabilities, and our lower learning curve. Requested a proposal including enterprise pricing and an implementation roadmap.</p><p><strong>Next Best Action:</strong></p><ul><li style=\"margin-left:15px\"><p>Send formal proposal and pricing by <strong>July 1st</strong></p></li><li style=\"margin-left:15px\"><p>Schedule technical Q&amp;A session with our solutions engineer on <strong>July 3rd</strong></p></li></ul><p><strong>Sales Pipeline Stage:</strong> Proposal Sent – Mid Funnel<br><strong>Sales Reports:</strong> Logged in CRM under <em>Q3 Strategic Accounts</em><br><strong>Opportunity ID:</strong> QA-ACME-0097</p><hr><p>Let me know if you'd like me to loop in Alex (Solutions Engineer) for the follow-up call.</p><p>Best,<br><strong>Zulekha Imtiaz</strong><br>Sales Representative<br>Quantum Analytics<br><a rel=\"noopener\">zulekha@quantumanalytics.com</a> | +1 (234) 555-0199<br><a rel=\"noopener\" href=\"https://www.quantumanalytics.com/\" target=\"_blank\">quantumanalytics.com</a></p></div>\r\n",
+              "attachments": [
+                {
+                  "name": "QP #05.pdf",
+                  "contentType": "application/pdf",
+                  "driveFileId": "1CLHq-U9jMaJomjlSVVLqrVzeySZy6nzv",
+                  "driveUrl": "https://drive.google.com/file/d/1CLHq-U9jMaJomjlSVVLqrVzeySZy6nzv/view?usp=drivesdk",
+                  "extractedText": "PDF content extraction requires Google Cloud Document AI.",
+                  "extractedData": null,
+                  "note": null,
+                  "error": null
+                }
+              ]
+            }
+          ]
+        }
+      }
     }
   };
 
@@ -207,14 +272,11 @@ export default function WebhookTestPage() {
 
       const responseData = await response.json();
 
-      // Check if this was email data
-      const isEmailData = parsedData.type === 'email' || 
-                         parsedData.event === 'email_received' ||
-                         parsedData.subject || 
-                         parsedData.from || 
-                         parsedData.sender ||
-                         parsedData.email_data ||
-                         (parsedData.data && (parsedData.data.subject || parsedData.data.from || parsedData.data.sender));
+      // Check if this was Google Apps Script email data
+      const isGoogleAppsScriptData = parsedData.source === 'google-apps-script' && 
+                                    parsedData.data && 
+                                    parsedData.data.action === 'fetch_emails' &&
+                                    parsedData.data.emailsProcessed > 0;
 
       const newLog: WebhookLog = {
         id: Date.now().toString(),
@@ -223,8 +285,10 @@ export default function WebhookTestPage() {
         status: response.status,
         body: parsedData,
         response: responseData,
-        isEmailData: isEmailData,
-        aiAnalysis: responseData.aiAnalysis
+        isEmailData: isGoogleAppsScriptData,
+        aiAnalysis: responseData.aiAnalysis,
+        documentProcessing: responseData.documentProcessing,
+        integration: responseData.integration
       };
 
       setLogs(prev => [newLog, ...prev.slice(0, 9)]); // Keep last 10 logs
@@ -593,6 +657,88 @@ export default function WebhookTestPage() {
                                 <span className="font-medium text-blue-700 text-xs">Reasoning:</span>
                                 <p className="text-xs text-blue-600 mt-1">{log.aiAnalysis.reasoning}</p>
                               </div>
+                            </div>
+                          )}
+
+                          {/* Document Processing Results */}
+                          {log.documentProcessing && (
+                            <div className="mb-3 p-3 bg-green-50 rounded border border-green-200">
+                              <h4 className="text-sm font-semibold text-green-800 mb-2 flex items-center">
+                                <Code className="w-4 h-4 mr-1" />
+                                Document Processing
+                              </h4>
+                              <div className="grid grid-cols-2 gap-2 text-xs">
+                                <div>
+                                  <span className="font-medium text-green-700">Status:</span>
+                                  <span className={`ml-1 px-1 py-0.5 rounded ${
+                                    log.documentProcessing.status === 200
+                                      ? 'bg-green-100 text-green-800' 
+                                      : 'bg-red-100 text-red-800'
+                                  }`}>
+                                    {log.documentProcessing.status}
+                                  </span>
+                                </div>
+                                <div>
+                                  <span className="font-medium text-green-700">File Type:</span>
+                                  <span className="ml-1">{log.documentProcessing.data?.file_type || 'N/A'}</span>
+                                </div>
+                                <div>
+                                  <span className="font-medium text-green-700">Pages:</span>
+                                  <span className="ml-1">{log.documentProcessing.data?.metadata?.total_pages || 'N/A'}</span>
+                                </div>
+                                <div>
+                                  <span className="font-medium text-green-700">Language:</span>
+                                  <span className="ml-1">{log.documentProcessing.data?.metadata?.language || 'N/A'}</span>
+                                </div>
+                              </div>
+                              {log.documentProcessing.data?.content?.pages && (
+                                <div className="mt-2">
+                                  <span className="font-medium text-green-700 text-xs">Extracted Content:</span>
+                                  <p className="text-xs text-green-600 mt-1">
+                                    {log.documentProcessing.data.content.pages.length} page(s) processed
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Integration Results */}
+                          {log.integration && (
+                            <div className="mb-3 p-3 bg-purple-50 rounded border border-purple-200">
+                              <h4 className="text-sm font-semibold text-purple-800 mb-2 flex items-center">
+                                <Database className="w-4 h-4 mr-1" />
+                                Integration Result
+                              </h4>
+                              <div className="grid grid-cols-2 gap-2 text-xs">
+                                <div>
+                                  <span className="font-medium text-purple-700">Integration:</span>
+                                  <span className="ml-1">{log.integration.selectedIntegration || 'N/A'}</span>
+                                </div>
+                                <div>
+                                  <span className="font-medium text-purple-700">Table:</span>
+                                  <span className="ml-1">{log.integration.tableName || 'N/A'}</span>
+                                </div>
+                                <div>
+                                  <span className="font-medium text-purple-700">Status:</span>
+                                  <span className={`ml-1 px-1 py-0.5 rounded ${
+                                    log.integration.status === 'success'
+                                      ? 'bg-green-100 text-green-800' 
+                                      : 'bg-red-100 text-red-800'
+                                  }`}>
+                                    {log.integration.status || 'N/A'}
+                                  </span>
+                                </div>
+                                <div>
+                                  <span className="font-medium text-purple-700">Confidence:</span>
+                                  <span className="ml-1">{log.integration.confidence ? Math.round(log.integration.confidence * 100) + '%' : 'N/A'}</span>
+                                </div>
+                              </div>
+                              {log.integration.explanation && (
+                                <div className="mt-2">
+                                  <span className="font-medium text-purple-700 text-xs">Explanation:</span>
+                                  <p className="text-xs text-purple-600 mt-1">{log.integration.explanation}</p>
+                                </div>
+                              )}
                             </div>
                           )}
                           

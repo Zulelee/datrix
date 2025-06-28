@@ -59,7 +59,7 @@ Contains structured sales or financial data, including:
 1. Invoices, purchase orders (POs), receipts, payments, confirmations.
 2. Mentions specific keywords such as:
     "Invoice", "Purchase Order", "PO", "Order", "Payment", "Sales Report", "Receipt", "Credit Note"
-3. Includes business documents:
+3. Includes business documents Not Complusory:
     Attachments (PDFs, Excels, DOCs) with relevant names (e.g., invoice_123.pdf, po_march.xlsx)
 4. Comes from relevant sources:
     Vendors, B2B clients, accounts/sales/logistics departments.

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { emailAgent } from '@/lib/ai-agent';
+import { supabase } from '@/lib/supabaseRoleClient';
 
 export async function POST(request: NextRequest) {
   try {
@@ -43,93 +44,225 @@ export async function POST(request: NextRequest) {
     console.log('📄 Body:', JSON.stringify(webhookData.body, null, 2));
     console.log('==================\n');
 
-    // Check if this is email data and process with AI agent
+    // Check if this is Google Apps Script email data
     let aiAnalysis = null;
     let processingResult = null;
     let documentProcessingResult = null;
     let integrationResult = null;
+    let userId = null;
 
-    // Detect if the webhook contains email data
-    const isEmailData = true;
+    // Detect if the webhook contains Google Apps Script email data
+    const isGoogleAppsScriptData = body.source === 'google-apps-script' && 
+                                  body.data && 
+                                  body.data.action === 'fetch_emails' &&
+                                  body.data.emailsProcessed > 0 &&
+                                  body.data.data && 
+                                  Array.isArray(body.data.data) && 
+                                  body.data.data.length > 0;
 
-    if (isEmailData) {
-      console.log('\n📧 EMAIL DATA DETECTED - ACTIVATING AI AGENT');
-      console.log('=============================================');
-      
-      try {
-        // Extract email data from various possible structures
-        const emailData = body.email_data || body.data || body;
+    if (isGoogleAppsScriptData) {
+      console.log('\n📧 GOOGLE APPS SCRIPT EMAIL DATA DETECTED');
+      console.log('==========================================');
+      console.log('📊 Emails Processed:', body.data.emailsProcessed);
+      console.log('🔍 Search Query:', body.data.searchQuery);
+      console.log('📧 Number of Emails:', body.data.data.length);
+      console.log('==========================================\n');
+
+      // Process each email in the array
+      for (const emailData of body.data.data) {
+        console.log(`\n📧 PROCESSING EMAIL: ${emailData.subject}`);
+        console.log('=====================================');
         
-        // Process with AI agent that decides if the email should be processed further
-        processingResult = await emailAgent.processEmailDecision(emailData);
-        aiAnalysis = processingResult.decision;
-
-        console.log('🤖 AI ANALYSIS COMPLETE');
-        console.log('=======================');
-        console.log('✅ Should Process:', aiAnalysis.shouldProcess);
-        console.log('🎯 Confidence:', aiAnalysis.confidence);
-        console.log('📂 Category:', aiAnalysis.category);
-        console.log('⚡ Priority:', aiAnalysis.priority);
-        console.log('💭 Reasoning:', aiAnalysis.reasoning);
-        console.log('📊 Extracted Data:', JSON.stringify(aiAnalysis.extractedData, null, 2));
-        console.log('🔄 Next Actions:', processingResult.nextActions);
-        console.log('💾 Should Store:', processingResult.shouldStore);
-        console.log('=======================\n');
-
-        // Send to document processing endpoint if AI decides to process
-        if (aiAnalysis.shouldProcess) {
-          console.log('🚀 SENDING TO DOCUMENT PROCESSING ENDPOINT');
-          console.log('==========================================');
+        try {
+          // Extract recipient email to get user ID from Supabase
+          const recipientEmail = extractEmailFromRecipient(emailData.recipient);
+          console.log('📧 Recipient Email:', recipientEmail);
           
-          try {
-            documentProcessingResult = await sendToDocumentProcessor(emailData, aiAnalysis);
+          if (recipientEmail) {
+            // Get user ID from Supabase using email
+            userId = await getUserIdByEmail(recipientEmail);
             
-            console.log('✅ DOCUMENT PROCESSING SUCCESS');
-            console.log('==============================');
-            console.log('📤 Sent to:', 'http://0.0.0.0:8080/test/process-document');
-            console.log('📊 Response:', JSON.stringify(documentProcessingResult, null, 2));
-            console.log('==============================\n');
-
-            // Now send the document processing result to the integration agent
-            if (documentProcessingResult.status === 200 && documentProcessingResult.data) {
-              console.log('🔗 SENDING TO INTEGRATION AGENT');
-              console.log('===============================');
-              
-              // TODO: Send the document processing result to an agent that is similar to datrixai 
-              // and sends the data to the appropriate integration
-              
+            if (!userId) {
+              console.log('⚠️  User not found in Supabase for email:', recipientEmail);
+              console.log('🔄 Continuing with default user ID');
+              userId = 'default-user';
             } else {
-              console.log('⏸️  INTEGRATION SKIPPED - DOCUMENT PROCESSING FAILED');
-              console.log('===================================================');
-              console.log('📝 Reason: Document processor did not return valid data');
-              console.log('===================================================\n');
+              console.log('✅ User ID found:', userId);
+            }
+          } else {
+            console.log('⚠️  No recipient email found, using default user ID');
+            userId = 'default-user';
+          }
+
+          // Format email data for AI processing
+          const formattedEmailData = {
+            from: emailData.sender,
+            subject: emailData.subject,
+            body: emailData.bodyPlainText || emailData.bodyHtml,
+            timestamp: emailData.date,
+            attachments: emailData.attachments || [],
+            recipient: emailData.recipient,
+            messageId: emailData.messageId,
+            threadId: emailData.threadId,
+            isRead: emailData.isRead,
+            userId: userId
+          };
+
+          console.log('📧 Formatted Email Data:', {
+            from: formattedEmailData.from,
+            subject: formattedEmailData.subject,
+            timestamp: formattedEmailData.timestamp,
+            attachments: formattedEmailData.attachments.length,
+            hasBody: Boolean(formattedEmailData.body),
+            bodyLength: formattedEmailData.body ? formattedEmailData.body.length : 0,
+            userId: formattedEmailData.userId
+          });
+
+          // Ensure we have email content to process
+          if (!formattedEmailData.body || formattedEmailData.body.trim().length === 0) {
+            console.log('⚠️  Skipping email - no content to process');
+            continue;
+          }
+
+          // Process with AI agent that decides if the email should be processed further
+          processingResult = await emailAgent.processEmailDecision(formattedEmailData);
+          aiAnalysis = processingResult.decision;
+
+          console.log('🤖 AI ANALYSIS COMPLETE');
+          console.log('=======================');
+          console.log('✅ Should Process:', aiAnalysis.shouldProcess);
+          console.log('🎯 Confidence:', aiAnalysis.confidence);
+          console.log('📂 Category:', aiAnalysis.category);
+          console.log('⚡ Priority:', aiAnalysis.priority);
+          console.log('💭 Reasoning:', aiAnalysis.reasoning);
+          console.log('📊 Extracted Data:', JSON.stringify(aiAnalysis.extractedData, null, 2));
+          console.log('🔄 Next Actions:', processingResult.nextActions);
+          console.log('💾 Should Store:', processingResult.shouldStore);
+          console.log('=======================\n');
+
+          // Send to document processing endpoint if AI decides to process
+          if (aiAnalysis.shouldProcess) {
+            console.log('🚀 CHECKING FOR ATTACHMENTS');
+            console.log('==========================================');
+            
+            // Check if there are attachments to process
+            const hasAttachments = emailData.attachments && emailData.attachments.length > 0;
+            console.log('📎 Has Attachments:', hasAttachments);
+            console.log('📎 Attachment Count:', emailData.attachments ? emailData.attachments.length : 0);
+            
+            if (hasAttachments) {
+              console.log('📎 Attachment Details:', emailData.attachments.map((att: any) => ({
+                name: att.name,
+                contentType: att.contentType,
+                hasExtractedText: Boolean(att.extractedText),
+                hasDriveUrl: Boolean(att.driveUrl),
+                hasError: Boolean(att.error)
+              })));
             }
             
-          } catch (docError) {
-            console.error('❌ DOCUMENT PROCESSING ERROR');
-            console.error('============================');
-            console.error('Error:', docError);
-            console.error('============================\n');
-            
-            documentProcessingResult = {
-              error: 'Document processing failed',
-              message: docError instanceof Error ? docError.message : 'Unknown document processing error'
-            };
-          }
-        } else {
-          console.log('⏸️  EMAIL PROCESSING SKIPPED - NOT SENT TO DOCUMENT PROCESSOR');
-          console.log('============================================================');
-          console.log('📝 Reason:', aiAnalysis.reasoning);
-          console.log('============================================================\n');
-        }
+            if (hasAttachments) {
+              console.log('🚀 SENDING TO DOCUMENT PROCESSING ENDPOINT');
+              console.log('==========================================');
+              
+              try {
+                documentProcessingResult = await sendToDocumentProcessor(formattedEmailData, aiAnalysis);
+                
+                console.log('✅ DOCUMENT PROCESSING SUCCESS');
+                console.log('==============================');
+                console.log('📤 Sent to:', 'http://0.0.0.0:8080/test/process-document');
+                console.log('📊 Response:', JSON.stringify(documentProcessingResult, null, 2));
+                console.log('==============================\n');
 
-      } catch (aiError) {
-        console.error('❌ AI AGENT ERROR:', aiError);
-        aiAnalysis = {
-          error: 'AI processing failed',
-          message: aiError instanceof Error ? aiError.message : 'Unknown AI error'
-        };
+                // Now send the document processing result to the automation agent
+                if (documentProcessingResult.status === 200 && documentProcessingResult.data) {
+                  console.log('🔗 SENDING TO AUTOMATION AGENT');
+                  console.log('===============================');
+                  
+                  try {
+                    integrationResult = await sendToAutomationAgent(documentProcessingResult.data, formattedEmailData, aiAnalysis, userId);
+                    
+                    console.log('✅ AUTOMATION AGENT SUCCESS');
+                    console.log('===========================');
+                    console.log('📊 Integration Result:', JSON.stringify(integrationResult, null, 2));
+                    console.log('===========================\n');
+                    
+                  } catch (autoError) {
+                    console.error('❌ AUTOMATION AGENT ERROR');
+                    console.error('==========================');
+                    console.error('Error:', autoError);
+                    console.error('==========================\n');
+                    
+                    integrationResult = {
+                      error: 'Automation agent failed',
+                      message: autoError instanceof Error ? autoError.message : 'Unknown automation error'
+                    };
+                  }
+                  
+                } else {
+                  console.log('⏸️  AUTOMATION SKIPPED - DOCUMENT PROCESSING FAILED');
+                  console.log('===================================================');
+                  console.log('📝 Reason: Document processor did not return valid data');
+                  console.log('===================================================\n');
+                }
+                
+              } catch (docError) {
+                console.error('❌ DOCUMENT PROCESSING ERROR');
+                console.error('============================');
+                console.error('Error:', docError);
+                console.error('============================\n');
+                
+                documentProcessingResult = {
+                  error: 'Document processing failed',
+                  message: docError instanceof Error ? docError.message : 'Unknown document processing error'
+                };
+              }
+            } else {
+              console.log('⏸️  SKIPPING DOCUMENT PROCESSING - NO ATTACHMENTS');
+              console.log('==================================================');
+              console.log('📝 Reason: No attachments to process');
+              console.log('🔄 Sending email data directly to automation agent');
+              console.log('==================================================\n');
+              
+              try {
+                // Send email data directly to automation agent without document processing
+                integrationResult = await sendToAutomationAgent(formattedEmailData, formattedEmailData, aiAnalysis, userId);
+                
+                console.log('✅ AUTOMATION AGENT SUCCESS (NO DOCUMENT PROCESSING)');
+                console.log('===================================================');
+                console.log('📊 Integration Result:', JSON.stringify(integrationResult, null, 2));
+                console.log('===================================================\n');
+                
+              } catch (autoError) {
+                console.error('❌ AUTOMATION AGENT ERROR');
+                console.error('==========================');
+                console.error('Error:', autoError);
+                console.error('==========================\n');
+                
+                integrationResult = {
+                  error: 'Automation agent failed',
+                  message: autoError instanceof Error ? autoError.message : 'Unknown automation error'
+                };
+              }
+            }
+          } else {
+            console.log('⏸️  EMAIL PROCESSING SKIPPED - NOT SENT TO DOCUMENT PROCESSOR');
+            console.log('============================================================');
+            console.log('📝 Reason:', aiAnalysis.reasoning);
+            console.log('============================================================\n');
+          }
+
+        } catch (emailError) {
+          console.error(`❌ ERROR PROCESSING EMAIL: ${emailData.subject}`);
+          console.error('==========================================');
+          console.error('Error:', emailError);
+          console.error('==========================================\n');
+        }
       }
+    } else {
+      console.log('⏸️  NO GOOGLE APPS SCRIPT EMAIL DATA DETECTED');
+      console.log('==============================================');
+      console.log('📝 Reason: Body does not match expected Google Apps Script format');
+      console.log('==============================================\n');
     }
 
     // Return success response with all processing results
@@ -140,7 +273,8 @@ export async function POST(request: NextRequest) {
       dataReceived: {
         bodySize: webhookData.bodySize,
         hasData: Object.keys(body).length > 0,
-        isEmailData: isEmailData
+        isGoogleAppsScriptData: isGoogleAppsScriptData,
+        emailsProcessed: isGoogleAppsScriptData ? body.data.emailsProcessed : 0
       },
       ...(aiAnalysis && {
         aiAnalysis: {
@@ -189,9 +323,28 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// Helper function to extract email from recipient string
+function extractEmailFromRecipient(recipient: string): string | null {
+  if (!recipient) return null;
+  
+  // Extract email from formats like "datrix <datrix.saledata@gmail.com>"
+  const emailMatch = recipient.match(/<(.+?)>/);
+  if (emailMatch) {
+    return emailMatch[1];
+  }
+  
+  // If no angle brackets, check if it's a valid email
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (emailRegex.test(recipient)) {
+    return recipient;
+  }
+  
+  return null;
+}
+
 // Function to send email data to document processing endpoint
 async function sendToDocumentProcessor(emailData: any, aiAnalysis: any) {
-  const DOCUMENT_PROCESSOR_URL = 'http://0.0.0.0:8080/test/process-document';
+  const DOCUMENT_PROCESSOR_URL = `${process.env.NEXT_PUBLIC_BACKEND_URL}/test/process-document`;
   
   // Prepare the email content as text
   const emailText = formatEmailAsText(emailData, aiAnalysis);
@@ -202,22 +355,67 @@ async function sendToDocumentProcessor(emailData: any, aiAnalysis: any) {
   // Add the email content as text
   formData.append('text', emailText);
   
-  // If there are attachments mentioned, we'll note them in the text
-  // In a real implementation, you'd need to fetch and attach actual files
+  // Handle attachments if they exist (optional)
   if (emailData.attachments && emailData.attachments.length > 0) {
-    // For now, we'll create a simple text file with attachment info
-    const attachmentInfo = `Attachments mentioned: ${emailData.attachments.join(', ')}`;
-    const blob = new Blob([attachmentInfo], { type: 'text/plain' });
-    formData.append('file', blob, 'email_attachments_info.txt');
-  } else {
-    // Create a minimal text file since the endpoint expects a file
-    const emailBlob = new Blob([emailText], { type: 'text/plain' });
-    formData.append('file', emailBlob, `email_${Date.now()}.txt`);
+    console.log('📎 Processing attachments:', emailData.attachments.length);
+    
+    for (const attachment of emailData.attachments) {
+      try {
+        console.log(`📎 Processing attachment: ${attachment.name} (${attachment.contentType})`);
+        
+        // Check if we have extracted text from Google Drive
+        if (attachment.extractedText && attachment.extractedText !== "PDF content extraction requires Google Cloud Document AI.") {
+          console.log(`📄 Using extracted text for: ${attachment.name}`);
+          const textBlob = new Blob([attachment.extractedText], { type: 'text/plain' });
+          formData.append('file', textBlob, `${attachment.name}.txt`);
+        } else if (attachment.driveUrl) {
+          console.log(`📄 Fetching from Google Drive: ${attachment.name}`);
+          // Try to fetch from Google Drive URL
+          try {
+            const response = await fetch(attachment.driveUrl);
+            if (response.ok) {
+              const blob = await response.blob();
+              formData.append('file', blob, attachment.name);
+            } else {
+              console.warn(`Failed to fetch from Google Drive: ${attachment.name}`);
+              // Create placeholder with attachment info
+              const attachmentInfo = `Attachment: ${attachment.name}\nType: ${attachment.contentType}\nDrive URL: ${attachment.driveUrl}\nNote: Could not fetch file from Google Drive`;
+              const blob = new Blob([attachmentInfo], { type: 'text/plain' });
+              formData.append('file', blob, `${attachment.name}.txt`);
+            }
+          } catch (driveError) {
+            console.warn(`Error fetching from Google Drive: ${attachment.name}`, driveError);
+            // Create placeholder with attachment info
+            const attachmentInfo = `Attachment: ${attachment.name}\nType: ${attachment.contentType}\nDrive URL: ${attachment.driveUrl}\nError: ${driveError instanceof Error ? driveError.message : 'Unknown error'}`;
+            const blob = new Blob([attachmentInfo], { type: 'text/plain' });
+            formData.append('file', blob, `${attachment.name}.txt`);
+          }
+        } else {
+          console.log(`📄 Creating placeholder for: ${attachment.name}`);
+          // Create a placeholder file with attachment metadata
+          const attachmentInfo = `Attachment: ${attachment.name}\nType: ${attachment.contentType}\nDrive File ID: ${attachment.driveFileId || 'N/A'}\nNote: No extracted text or drive URL available`;
+          const blob = new Blob([attachmentInfo], { type: 'text/plain' });
+          formData.append('file', blob, `${attachment.name}.txt`);
+        }
+      } catch (error) {
+        console.warn(`Failed to process attachment ${attachment.name}:`, error);
+        // Create a placeholder file
+        const attachmentInfo = `Failed to load attachment: ${attachment.name}\nError: ${error instanceof Error ? error.message : 'Unknown error'}`;
+        const blob = new Blob([attachmentInfo], { type: 'text/plain' });
+        formData.append('file', blob, `${attachment.name}.txt`);
+      }
+    }
   }
+  
+  // Always create a text file with email content since the endpoint expects a file
+  // This ensures processing works even without attachments
+  const emailBlob = new Blob([emailText], { type: 'text/plain' });
+  formData.append('file', emailBlob, `email_${Date.now()}.txt`);
   
   console.log('📤 Sending to document processor...');
   console.log('📧 Email text length:', emailText.length, 'characters');
-  console.log('📎 Attachments:', emailData.attachments || 'None');
+  console.log('📎 Attachments:', emailData.attachments ? emailData.attachments.length : 0);
+  console.log('📄 Email file created for processing');
   
   // Send the request
   const response = await fetch(DOCUMENT_PROCESSOR_URL, {
@@ -234,6 +432,86 @@ async function sendToDocumentProcessor(emailData: any, aiAnalysis: any) {
   }
   
   const result = await response.json();
+  return {
+    status: response.status,
+    statusText: response.statusText,
+    data: result,
+    sentAt: new Date().toISOString()
+  };
+}
+
+// Function to send processed document data to automation agent
+async function sendToAutomationAgent(documentData: any, emailData: any, aiAnalysis: any, userId: string) {
+  const AUTOMATION_URL = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/automation`;
+  
+  // Prepare the message for the automation agent
+  const message = {
+    role: 'user',
+    content: `I have processed email data and extracted the following information. Please automatically add this data to the appropriate integration:
+
+Email Subject: ${emailData.subject || 'No Subject'}
+Email From: ${emailData.from || emailData.sender || 'Unknown'}
+AI Category: ${aiAnalysis.category}
+AI Priority: ${aiAnalysis.priority}
+
+Extracted Data from Document Processing:
+${JSON.stringify(documentData, null, 2)}
+
+Please process this data and add it to the most appropriate integration automatically.`
+  };
+
+  console.log('🤖 Sending to automation agent...');
+  console.log('📧 Message:', message.content);
+  
+  // Send the request to the automation agent
+  const response = await fetch(AUTOMATION_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      messages: [message],
+      userId: userId
+    })
+  });
+  
+  if (!response.ok) {
+    throw new Error(`Automation agent responded with status: ${response.status} ${response.statusText}`);
+  }
+  
+  // Handle streaming response
+  const reader = response.body?.getReader();
+  if (!reader) {
+    throw new Error('No response body reader available');
+  }
+
+  let fullResponse = '';
+  const decoder = new TextDecoder();
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      
+      const chunk = decoder.decode(value);
+      fullResponse += chunk;
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  // Parse the streaming response
+  let result;
+  try {
+    // The response might be multiple JSON objects separated by newlines
+    const lines = fullResponse.trim().split('\n');
+    const lastLine = lines[lines.length - 1];
+    result = JSON.parse(lastLine);
+  } catch (parseError) {
+    console.warn('Failed to parse automation response as JSON, using raw response');
+    result = { text: fullResponse };
+  }
+
   return {
     status: response.status,
     statusText: response.statusText,
@@ -344,4 +622,21 @@ export async function PUT(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   return POST(request);
+}
+
+export const getUserIdByEmail = async (email: string) => {
+  try {
+    const { data, error } = await supabase.auth.admin.listUsers()
+    
+    if (error) {
+      console.error('Error fetching users:', error.message)
+      return null
+    }
+
+    const user = data?.users?.find((user: any) => user.email === email)
+    return user?.id || null
+  } catch (error) {
+    console.error('Error in getUserIdByEmail:', error)
+    return null
+  }
 }
