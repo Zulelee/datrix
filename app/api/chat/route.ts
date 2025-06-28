@@ -106,6 +106,9 @@ async function airtableIntegrationTool(userId: string, action: string, params: a
       case 'upsertRecords':
         return await upsertAirtableRecords(token, params);
       
+      case 'getRecords':
+        return await getAirtableRecords(token, params);
+        
       default:
         return { success: false, error: `Unknown action: ${action}` };
     }
@@ -155,6 +158,7 @@ async function getAirtableSchema(token: string) {
         for (const table of tablesData.data.tables) {
           schema.bases[base.name].tables[table.name] = {
             id: table.id,
+            baseId: base.id,
             fields: {},
             fieldsList: [] // Add explicit list of field names for validation
           };
@@ -210,6 +214,28 @@ async function upsertAirtableRecords(token: string, params: any) {
   console.log('Records to insert:', JSON.stringify(records, null, 2));
   
   try {
+    // Validate required parameters
+    if (!baseId) {
+      return { 
+        success: false, 
+        error: 'Missing baseId parameter. You must provide the exact baseId from the schema.' 
+      };
+    }
+    
+    if (!tableName) {
+      return { 
+        success: false, 
+        error: 'Missing tableName parameter. You must provide the exact table name as it appears in the schema.' 
+      };
+    }
+    
+    if (!records || !Array.isArray(records) || records.length === 0) {
+      return { 
+        success: false, 
+        error: 'Missing or invalid records parameter. You must provide an array of records to insert.' 
+      };
+    }
+    
     const requestBody = {
       token,
       baseId,
@@ -245,7 +271,23 @@ async function upsertAirtableRecords(token: string, params: any) {
     if (!response.ok) {
       const error = await response.json();
       console.log('Airtable error response:', error);
-      return { success: false, error: error.message || 'Failed to create records' };
+      
+      // Provide more detailed error message based on common issues
+      let errorMessage = error.message || 'Failed to create records';
+      
+      if (error.error?.type === 'INVALID_PERMISSIONS_ERROR') {
+        errorMessage = 'Permission error: The API key does not have access to this base or table.';
+      } else if (error.error?.type === 'TABLE_NOT_FOUND') {
+        errorMessage = `Table not found: "${tableName}" does not exist in the specified base.`;
+      } else if (error.error?.type === 'INVALID_FIELD_NAME') {
+        errorMessage = 'Invalid field name: One or more field names do not exist in the table schema.';
+      } else if (error.error?.type === 'INVALID_VALUE_FOR_COLUMN') {
+        errorMessage = 'Invalid value: One or more values do not match the required format for their fields.';
+      } else if (error.error?.type === 'INVALID_MULTIPLE_CHOICE_OPTIONS') {
+        errorMessage = 'Invalid option: One or more select/multiselect values are not in the list of allowed options.';
+      }
+      
+      return { success: false, error: errorMessage, details: error };
     }
 
     const data = await response.json();
@@ -263,6 +305,93 @@ async function upsertAirtableRecords(token: string, params: any) {
 
   } catch (error) {
     console.error('Error upserting Airtable records:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    };
+  }
+}
+
+async function getAirtableRecords(token: string, params: any) {
+  const { baseId, tableName, options } = params;
+  
+  console.log('=== AIRTABLE GET RECORDS DEBUG ===');
+  console.log('Token (first 10 chars):', token ? token.substring(0, 10) + '...' : 'NO TOKEN');
+  console.log('Base ID:', baseId);
+  console.log('Table Name:', tableName);
+  console.log('Options:', options);
+  
+  try {
+    // Validate required parameters
+    if (!baseId) {
+      return { 
+        success: false, 
+        error: 'Missing baseId parameter. You must provide the exact baseId from the schema.' 
+      };
+    }
+    
+    if (!tableName) {
+      return { 
+        success: false, 
+        error: 'Missing tableName parameter. You must provide the exact table name as it appears in the schema.' 
+      };
+    }
+    
+    // Build URL with query parameters
+    const url = new URL(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/airtable/records`);
+    url.searchParams.append('token', token);
+    url.searchParams.append('baseId', baseId);
+    url.searchParams.append('tableIdOrName', tableName);
+    
+    // Add optional query parameters if provided
+    if (options) {
+      if (options.pageSize) url.searchParams.append('pageSize', options.pageSize.toString());
+      if (options.offset) url.searchParams.append('offset', options.offset);
+      if (options.filterByFormula) url.searchParams.append('filterByFormula', options.filterByFormula);
+      if (options.sort) url.searchParams.append('sort', JSON.stringify(options.sort));
+      if (options.view) url.searchParams.append('view', options.view);
+    }
+    
+    console.log('Request URL:', url.toString());
+    
+    const response = await fetch(url.toString(), {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' }
+    });
+
+    console.log('Airtable response status:', response.status);
+    
+    if (!response.ok) {
+      const error = await response.json();
+      console.log('Airtable error response:', error);
+      
+      // Provide more detailed error message based on common issues
+      let errorMessage = error.message || 'Failed to retrieve records';
+      
+      if (error.error?.type === 'INVALID_PERMISSIONS_ERROR') {
+        errorMessage = 'Permission error: The API key does not have access to this base or table.';
+      } else if (error.error?.type === 'TABLE_NOT_FOUND') {
+        errorMessage = `Table not found: "${tableName}" does not exist in the specified base.`;
+      }
+      
+      return { success: false, error: errorMessage, details: error };
+    }
+
+    const data = await response.json();
+    console.log('Airtable success response records count:', data.data.records?.length);
+    
+    return {
+      success: true,
+      integrationType: 'airtable',
+      tableName,
+      records: data.data.records,
+      offset: data.data.offset, // Include offset if returned by Airtable for pagination
+      recordCount: data.data.records?.length || 0,
+      message: `Successfully retrieved ${data.data.records?.length || 0} record(s) from ${tableName} in Airtable`
+    };
+
+  } catch (error) {
+    console.error('Error getting Airtable records:', error);
     return { 
       success: false, 
       error: error instanceof Error ? error.message : 'Unknown error' 
@@ -324,7 +453,7 @@ export async function POST(req: Request) {
 
   
   const result = await (streamText as any)({
-    model: openai('gpt-4o-mini'),
+    model: openai('gpt-4.1-mini'),
     verbose: true,
     toolChoice: 'auto',
     maxToolRoundtrips: 10,
@@ -344,18 +473,49 @@ When users provide data (either by uploading files or pasting/typing data), you 
 1. **IMMEDIATELY Get User Integrations**: ALWAYS use getUserIntegrations tool first when user provides data
 2. **IMMEDIATELY Get Real-time Schemas**: AUTOMATICALLY use the specific integration tools (airtableIntegration, postgresIntegration) with action "getSchema" to get current table structures
 3. **Analyze Data**: Examine the user's data to understand what type of information it contains (contacts, deals, tasks, etc.)
-4. **Make Recommendation**: Choose the best integration and table based on:
+4. **<think>**: Before making recommendations, carefully think through:
+   - The exact structure of the target tables
+   - The specific data types of each column
+   - How to properly format data for each field type
+   - Any required fields that must be populated
+   - Any special handling needed for relationship fields
+   - Consider using getRecords to see example data for complex field types
+5. **Make Recommendation**: Choose the best integration and table based on:
    - Data type match (contact info → contacts table)
    - Schema compatibility (required fields can be populated)
    - Data completeness
    - **EXACT FIELD MATCHING**: Only suggest tables where the actual fields can accommodate the data
-5. **Present Decision**: Tell the user:
+6. **Present Decision**: Tell the user:
    - Which integration and table you recommend
    - Why this is the best choice
    - **EXACT field mapping** showing user data → actual table fields
    - Any potential issues or missing required fields
-6. **Ask for Confirmation**: Always ask "Should I proceed with adding this data to [Integration] → [Table]?"
-7. **Execute**: Only after user confirms, use the integration tool with action "upsertRecords" to add the data
+7. **Ask for Confirmation**: Always ask "Should I proceed with adding this data to [Integration] → [Table]?"
+8. **Plan Data Formatting**: BEFORE executing, create a detailed plan for how to format each field:
+   - For Airtable specifically:
+     - Text/String fields: Ensure proper text formatting
+     - Number fields: Convert to proper numeric format
+     - Date fields: Format as ISO string (YYYY-MM-DD)
+     - Select/MultiSelect fields: ONLY use values from the available options list
+     - Checkbox fields: Convert to boolean (true/false)
+     - URL fields: Ensure valid URL format
+     - Email fields: Ensure valid email format
+     - Phone fields: Format consistently
+     - Currency fields: Format as number without currency symbols
+     - Percent fields: Format as decimal (0.05 for 5%)
+     - Duration fields: Format in proper time units
+     - Rating fields: Use numeric value within range
+     - Formula fields: Do not attempt to populate (read-only)
+     - Rollup fields: Do not attempt to populate (read-only)
+     - Count fields: Do not attempt to populate (read-only)
+     - Created time/Last modified time: Do not attempt to populate (system fields)
+     - Linked Record fields: MUST provide record ID(s) of linked records, not plain text
+     - If unsure about field format, use getRecords to see examples of existing records
+9. **Execute**: Only after user confirms, use the integration tool with action "upsertRecords" to add the data with the following parameters:
+   - For Airtable: 
+     - baseId: MUST use the exact baseId from the schema (schema.bases[baseName].id)
+     - tableName: MUST use the exact table name as it appears in the schema
+     - records: Properly formatted array of records with fields property
 
 CRITICAL BEHAVIOR RULES:
 - **NEVER ask the user if they want you to check integrations - JUST DO IT AUTOMATICALLY**
@@ -370,6 +530,28 @@ CRITICAL SCHEMA MAPPING RULES:
 - **If no table has suitable fields, say so clearly and suggest creating a new table**
 - **When showing field mappings, use a clear table format with actual field names**
 - **Double-check your field mappings against the schema you just fetched**
+
+AIRTABLE SPECIFIC RULES:
+- **ALWAYS pass the correct baseId from the schema when upserting records**
+- **The baseId is available in the schema as schema.bases[baseName].id or directly in each table as schema.bases[baseName].tables[tableName].baseId**
+- **ALWAYS format data according to the field type in Airtable**
+- **For Select/MultiSelect fields, ONLY use values from the available options list**
+- **For Linked Record fields, provide record IDs, not plain text**
+- **For Date fields, use ISO format (YYYY-MM-DD)**
+- **Ensure records are properly formatted with { fields: { field1: value1, field2: value2 } }**
+- **Double-check that the table name exists in the specified base**
+- **If unsure about field formats, use getRecords to see examples of existing data in the table**
+
+USING THE GETRECORDS ACTION:
+- Use the getRecords action to retrieve example records from a table to understand:
+  - How data is formatted for specific field types
+  - What values are used for Select/MultiSelect fields
+  - How Linked Record fields are structured
+  - What IDs are used for related records
+- Parameters for getRecords:
+  - baseId: The ID of the base containing the table
+  - tableName: The name of the table to retrieve records from
+  - options (optional): Additional filtering options like pageSize, filterByFormula, etc.
 
 INTEGRATION QUESTIONS:
 When users ask about their integrations, use getUserIntegrations tool and provide clear details.
@@ -395,10 +577,10 @@ Be helpful, thorough, and focus on practical data organization solutions.`,
         }
       }),
       airtableIntegration: tool({
-        description: 'Interact with Airtable integration. Actions: "getSchema" to get real-time table structures, "upsertRecords" to add/update data.',
+        description: 'Interact with Airtable integration. Actions: "getSchema" to get real-time table structures, "upsertRecords" to add/update data, "getRecords" to retrieve records from a table.',
         parameters: z.object({
-          action: z.enum(['getSchema', 'upsertRecords']).describe('The action to perform'),
-          params: z.any().optional().describe('Parameters for the action (required for upsertRecords: baseId, tableName, records)')
+          action: z.enum(['getSchema', 'upsertRecords', 'getRecords']).describe('The action to perform'),
+          params: z.any().optional().describe('Parameters for the action. For "upsertRecords", you MUST provide: baseId (from schema.bases[baseName].id), tableName (exact name as in schema), and records (array of records formatted according to field types). For "getRecords", provide: baseId, tableName, and optional filtering options.')
         }),
         execute: async ({ action, params }) => {
           return await airtableIntegrationTool(userId, action, params);
