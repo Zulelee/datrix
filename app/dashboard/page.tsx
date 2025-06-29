@@ -21,7 +21,9 @@ import {
   TrendingUp,
   Bot,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Coffee,
+  Zap
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
@@ -30,136 +32,46 @@ import { OnboardingNavbar } from '@/components/Navbar';
 
 interface DataRun {
   id: string;
-  date: string;
-  time: string;
-  dataType: string;
+  created_at: string;
+  data_type: string;
   source: 'Email' | 'Datrix AI';
   destination: string;
   status: 'Success' | 'Failed' | 'In Progress';
-  destinationIcon: React.ComponentType<any>;
-  destinationColor: string;
+  user_id: string;
+  metadata?: any;
 }
+
+const getDestinationIcon = (destination: string) => {
+  const dest = destination.toLowerCase();
+  if (dest.includes('airtable')) return Database;
+  if (dest.includes('postgres') || dest.includes('postgresql')) return Server;
+  if (dest.includes('sheets') || dest.includes('google sheets')) return FileSpreadsheet;
+  if (dest.includes('notion')) return FileText;
+  if (dest.includes('slack')) return Slack;
+  if (dest.includes('calendar')) return Calendar;
+  if (dest.includes('api')) return Globe;
+  return Database; // Default
+};
+
+const getDestinationColor = (destination: string) => {
+  const dest = destination.toLowerCase();
+  if (dest.includes('airtable')) return '#ffb700';
+  if (dest.includes('postgres') || dest.includes('postgresql')) return '#336791';
+  if (dest.includes('sheets') || dest.includes('google sheets')) return '#34a853';
+  if (dest.includes('notion')) return '#000000';
+  if (dest.includes('slack')) return '#4a154b';
+  if (dest.includes('calendar')) return '#4285f4';
+  if (dest.includes('api')) return '#6366f1';
+  return '#6e1d27'; // Default
+};
 
 export default function DashboardPage() {
   const [mounted, setMounted] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [dataRuns, setDataRuns] = useState<DataRun[]>([]);
   const [showAllRuns, setShowAllRuns] = useState(false);
   const router = useRouter();
-
-  // Mock data for the past runs with updated source/destination structure
-  const [dataRuns] = useState<DataRun[]>([
-    {
-      id: '1',
-      date: '2024-01-15',
-      time: '14:32',
-      dataType: 'Contacts',
-      source: 'Email',
-      destination: 'Airtable',
-      status: 'Success',
-      destinationIcon: Database,
-      destinationColor: '#ffb700'
-    },
-    {
-      id: '2',
-      date: '2024-01-15',
-      time: '13:45',
-      dataType: 'Deals',
-      source: 'Datrix AI',
-      destination: 'PostgreSQL',
-      status: 'Success',
-      destinationIcon: Server,
-      destinationColor: '#336791'
-    },
-    {
-      id: '3',
-      date: '2024-01-15',
-      time: '12:18',
-      dataType: 'Leads',
-      source: 'Email',
-      destination: 'Google Sheets',
-      status: 'In Progress',
-      destinationIcon: FileSpreadsheet,
-      destinationColor: '#34a853'
-    },
-    {
-      id: '4',
-      date: '2024-01-15',
-      time: '11:22',
-      dataType: 'Tasks',
-      source: 'Datrix AI',
-      destination: 'Notion',
-      status: 'Success',
-      destinationIcon: FileText,
-      destinationColor: '#000000'
-    },
-    {
-      id: '5',
-      date: '2024-01-15',
-      time: '10:55',
-      dataType: 'Messages',
-      source: 'Email',
-      destination: 'Slack',
-      status: 'Failed',
-      destinationIcon: Slack,
-      destinationColor: '#4a154b'
-    },
-    {
-      id: '6',
-      date: '2024-01-15',
-      time: '09:30',
-      dataType: 'Events',
-      source: 'Datrix AI',
-      destination: 'Google Calendar',
-      status: 'Success',
-      destinationIcon: Calendar,
-      destinationColor: '#4285f4'
-    },
-    {
-      id: '7',
-      date: '2024-01-14',
-      time: '16:45',
-      dataType: 'Customers',
-      source: 'Email',
-      destination: 'Custom API',
-      status: 'Success',
-      destinationIcon: Globe,
-      destinationColor: '#6366f1'
-    },
-    {
-      id: '8',
-      date: '2024-01-14',
-      time: '15:12',
-      dataType: 'Orders',
-      source: 'Datrix AI',
-      destination: 'Airtable',
-      status: 'Success',
-      destinationIcon: Database,
-      destinationColor: '#ffb700'
-    },
-    {
-      id: '9',
-      date: '2024-01-14',
-      time: '14:08',
-      dataType: 'Contacts',
-      source: 'Email',
-      destination: 'PostgreSQL',
-      status: 'Success',
-      destinationIcon: Server,
-      destinationColor: '#336791'
-    },
-    {
-      id: '10',
-      date: '2024-01-14',
-      time: '13:25',
-      dataType: 'Invoices',
-      source: 'Datrix AI',
-      destination: 'Google Sheets',
-      status: 'Success',
-      destinationIcon: FileSpreadsheet,
-      destinationColor: '#34a853'
-    }
-  ]);
 
   useEffect(() => {
     setMounted(true);
@@ -173,7 +85,30 @@ export default function DashboardPage() {
       return;
     }
     setUser(user);
+    await loadUserRuns(user.id);
     setLoading(false);
+  };
+
+  const loadUserRuns = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('runs')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(50); // Limit to last 50 runs
+
+      if (error) {
+        console.error('Error loading runs:', error);
+        return;
+      }
+
+      if (data) {
+        setDataRuns(data);
+      }
+    } catch (error) {
+      console.error('Error loading runs:', error);
+    }
   };
 
   const logout = async () => {
@@ -215,8 +150,32 @@ export default function DashboardPage() {
     return source === 'Email' ? '#ea4335' : '#6e1d27';
   };
 
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString();
+  };
+
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
   // Show only first 5 runs unless "Show More" is clicked
   const displayedRuns = showAllRuns ? dataRuns : dataRuns.slice(0, 5);
+
+  // Punny empty state messages
+  const emptyStateMessages = [
+    "No runs found... looks like your data is taking a coffee break! ☕",
+    "Zero runs detected... your data must be running fashionably late! 🏃‍♂️",
+    "No runs in sight... even your data needs a day off sometimes! 😴",
+    "Run count: 0... your data is probably stuck in traffic! 🚗",
+    "No runs found... your data is playing hide and seek! 🙈",
+    "Empty runs table... your data is on a lunch break! 🥪",
+    "No runs detected... your data is probably binge-watching Netflix! 📺",
+    "Zero runs... your data is taking the scenic route! 🌄"
+  ];
+
+  const randomEmptyMessage = emptyStateMessages[Math.floor(Math.random() * emptyStateMessages.length)];
 
   if (!mounted || loading) {
     return null;
@@ -282,96 +241,137 @@ export default function DashboardPage() {
                 Recent Data Runs
               </h2>
 
-              {/* Table */}
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b-2 border-[#6e1d27]/20">
-                      <th className="text-left py-3 px-4 font-semibold text-[#3d0e15] font-ibm-plex">Date & Time</th>
-                      <th className="text-left py-3 px-4 font-semibold text-[#3d0e15] font-ibm-plex">Data Type</th>
-                      <th className="text-left py-3 px-4 font-semibold text-[#3d0e15] font-ibm-plex">Source</th>
-                      <th className="text-left py-3 px-4 font-semibold text-[#3d0e15] font-ibm-plex">Destination</th>
-                      <th className="text-left py-3 px-4 font-semibold text-[#3d0e15] font-ibm-plex">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {displayedRuns.map((run, index) => {
-                      const SourceIcon = getSourceIcon(run.source);
-                      return (
-                        <motion.tr
-                          key={run.id}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ duration: 0.4, delay: 0.4 + index * 0.05 }}
-                          className="border-b border-[#6e1d27]/10 hover:bg-[#6e1d27]/5 transition-colors duration-200"
-                        >
-                          <td className="py-3 px-4 text-[#6e1d27] font-ibm-plex">
-                            <div>
-                              <div className="font-medium">{run.date}</div>
-                              <div className="text-sm opacity-75">{run.time}</div>
-                            </div>
-                          </td>
-                          <td className="py-3 px-4 text-[#6e1d27] font-ibm-plex font-medium">
-                            {run.dataType}
-                          </td>
-                          <td className="py-3 px-4">
-                            <div className="flex items-center space-x-2">
-                              <SourceIcon 
-                                className="w-5 h-5" 
-                                style={{ color: getSourceColor(run.source) }}
-                              />
-                              <span className="text-[#6e1d27] font-ibm-plex font-medium">
-                                {run.source}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="py-3 px-4">
-                            <div className="flex items-center space-x-2">
-                              <run.destinationIcon 
-                                className="w-5 h-5" 
-                                style={{ color: run.destinationColor }}
-                              />
-                              <span className="text-[#6e1d27] font-ibm-plex font-medium">
-                                {run.destination}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="py-3 px-4">
-                            <div className="flex items-center space-x-2">
-                              {getStatusIcon(run.status)}
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(run.status)} font-ibm-plex`}>
-                                {run.status}
-                              </span>
-                            </div>
-                          </td>
-                        </motion.tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+              {/* Table or Empty State */}
+              {dataRuns.length === 0 ? (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.5 }}
+                  className="text-center py-16"
+                >
+                  <div className="mb-6">
+                    <Coffee className="w-16 h-16 text-[#6e1d27]/30 mx-auto mb-4" />
+                    <Zap className="w-8 h-8 text-[#6e1d27]/20 mx-auto animate-pulse" />
+                  </div>
+                  <h3 className="text-xl font-bold text-[#3d0e15] font-ibm-plex mb-2 hand-drawn-text">
+                    {randomEmptyMessage}
+                  </h3>
+                  <p className="text-[#6e1d27] font-ibm-plex mb-6">
+                    Start by uploading some data or connecting your integrations to see your runs here.
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                    <Button
+                      onClick={() => router.push('/datrixai')}
+                      className="hand-drawn-button bg-[#6e1d27] hover:bg-[#912d3c] text-white font-ibm-plex"
+                    >
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      Try DatrixAI
+                    </Button>
+                    <Button
+                      onClick={() => router.push('/profile')}
+                      variant="outline"
+                      className="hand-drawn-border border-2 border-[#6e1d27] text-[#6e1d27] hover:bg-[#6e1d27] hover:text-white font-ibm-plex"
+                    >
+                      <Database className="mr-2 h-4 w-4" />
+                      Connect Integrations
+                    </Button>
+                  </div>
+                </motion.div>
+              ) : (
+                <>
+                  {/* Table */}
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b-2 border-[#6e1d27]/20">
+                          <th className="text-left py-3 px-4 font-semibold text-[#3d0e15] font-ibm-plex">Date & Time</th>
+                          <th className="text-left py-3 px-4 font-semibold text-[#3d0e15] font-ibm-plex">Data Type</th>
+                          <th className="text-left py-3 px-4 font-semibold text-[#3d0e15] font-ibm-plex">Source</th>
+                          <th className="text-left py-3 px-4 font-semibold text-[#3d0e15] font-ibm-plex">Destination</th>
+                          <th className="text-left py-3 px-4 font-semibold text-[#3d0e15] font-ibm-plex">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {displayedRuns.map((run, index) => {
+                          const SourceIcon = getSourceIcon(run.source);
+                          const DestinationIcon = getDestinationIcon(run.destination);
+                          return (
+                            <motion.tr
+                              key={run.id}
+                              initial={{ opacity: 0, x: -20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ duration: 0.4, delay: 0.4 + index * 0.05 }}
+                              className="border-b border-[#6e1d27]/10 hover:bg-[#6e1d27]/5 transition-colors duration-200"
+                            >
+                              <td className="py-3 px-4 text-[#6e1d27] font-ibm-plex">
+                                <div>
+                                  <div className="font-medium">{formatDate(run.created_at)}</div>
+                                  <div className="text-sm opacity-75">{formatTime(run.created_at)}</div>
+                                </div>
+                              </td>
+                              <td className="py-3 px-4 text-[#6e1d27] font-ibm-plex font-medium">
+                                {run.data_type}
+                              </td>
+                              <td className="py-3 px-4">
+                                <div className="flex items-center space-x-2">
+                                  <SourceIcon 
+                                    className="w-5 h-5" 
+                                    style={{ color: getSourceColor(run.source) }}
+                                  />
+                                  <span className="text-[#6e1d27] font-ibm-plex font-medium">
+                                    {run.source}
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="py-3 px-4">
+                                <div className="flex items-center space-x-2">
+                                  <DestinationIcon 
+                                    className="w-5 h-5" 
+                                    style={{ color: getDestinationColor(run.destination) }}
+                                  />
+                                  <span className="text-[#6e1d27] font-ibm-plex font-medium">
+                                    {run.destination}
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="py-3 px-4">
+                                <div className="flex items-center space-x-2">
+                                  {getStatusIcon(run.status)}
+                                  <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(run.status)} font-ibm-plex`}>
+                                    {run.status}
+                                  </span>
+                                </div>
+                              </td>
+                            </motion.tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
 
-              {/* Show More/Less Button */}
-              {dataRuns.length > 5 && (
-                <div className="flex justify-center mt-6">
-                  <Button
-                    onClick={() => setShowAllRuns(!showAllRuns)}
-                    variant="outline"
-                    className="hand-drawn-border border-2 border-[#6e1d27] text-[#6e1d27] hover:bg-[#6e1d27] hover:text-white font-ibm-plex transition-all duration-300"
-                  >
-                    {showAllRuns ? (
-                      <>
-                        Show Less
-                        <ChevronUp className="ml-2 h-4 w-4" />
-                      </>
-                    ) : (
-                      <>
-                        Show More
-                        <ChevronDown className="ml-2 h-4 w-4" />
-                      </>
-                    )}
-                  </Button>
-                </div>
+                  {/* Show More/Less Button */}
+                  {dataRuns.length > 5 && (
+                    <div className="flex justify-center mt-6">
+                      <Button
+                        onClick={() => setShowAllRuns(!showAllRuns)}
+                        variant="outline"
+                        className="hand-drawn-border border-2 border-[#6e1d27] text-[#6e1d27] hover:bg-[#6e1d27] hover:text-white font-ibm-plex transition-all duration-300"
+                      >
+                        {showAllRuns ? (
+                          <>
+                            Show Less
+                            <ChevronUp className="ml-2 h-4 w-4" />
+                          </>
+                        ) : (
+                          <>
+                            Show More ({dataRuns.length - 5} more)
+                            <ChevronDown className="ml-2 h-4 w-4" />
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  )}
+                </>
               )}
 
               {/* Bottom decorative doodles */}
