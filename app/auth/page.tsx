@@ -35,10 +35,18 @@ export default function AuthPage() {
     const checkUser = async () => {
       const { data, error } = await supabase.auth.getUser();
       if (data?.user) {
-        // Optionally, check if user is new by looking for a profile row or metadata
-        // If new, show onboarding; if not, redirect to dashboard
-      } else {
-        router.push('/auth');
+        // Check if onboarding is complete
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('onboarding_complete')
+          .eq('id', data.user.id)
+          .single();
+
+        if (profile?.onboarding_complete) {
+          router.push('/dashboard');
+        } else {
+          router.push('/onboarding');
+        }
       }
       setLoading(false);
     };
@@ -65,11 +73,22 @@ export default function AuthPage() {
     if (isLogin) {
       // Login
       const { email, password } = formData;
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
         setError(error.message);
-      } else {
-        router.push('/onboarding');
+      } else if (data.user) {
+        // Check if onboarding is complete
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('onboarding_complete')
+          .eq('id', data.user.id)
+          .single();
+
+        if (profile?.onboarding_complete) {
+          router.push('/dashboard');
+        } else {
+          router.push('/onboarding');
+        }
       }
     } else {
       // Signup
@@ -98,11 +117,6 @@ export default function AuthPage() {
     }
     setLoading(false);
   };
-  // const handleSubmit = (e: React.FormEvent) => {
-  //   e.preventDefault();
-  //   // Handle form submission here
-  //   console.log('Form submitted:', formData);
-  // };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#f9efe8] via-[#f5e6d3] to-[#f0dcc4] relative overflow-hidden">
@@ -336,7 +350,7 @@ export default function AuthPage() {
                 onClick={async () => {
                   setLoading(true);
                   setError(null);
-                  const { error } = await supabase.auth.signInWithOAuth({
+                  const { data, error } = await supabase.auth.signInWithOAuth({
                     provider: 'google',
                     options: {
                       redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/onboarding`
