@@ -335,7 +335,7 @@ ${JSON.stringify(documentData, null, 2)}
         <div className="max-w-6xl mx-auto h-full flex gap-6">
           
           {/* Sidebar - Connected Sources */}
-          <motion.div
+          {/* <motion.div
             initial={{ opacity: 0, x: -30 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6, ease: "easeOut" }}
@@ -409,7 +409,7 @@ ${JSON.stringify(documentData, null, 2)}
                 </svg>
               </div>
             </div>
-          </motion.div>
+          </motion.div> */}
 
           {/* Main Chat Area - Properly sized */}
           <motion.div

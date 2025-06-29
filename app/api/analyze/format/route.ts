@@ -52,6 +52,7 @@ If the analysis text doesn't contain proper components, create appropriate chart
 IMPORTANT: 
 - Each chart component must have a unique id
 - Chart types must be one of: bar, pie, line, area, donut
+- Do NOT use 'metric' as a chart type - convert any metrics to bar charts instead
 - Dataset must have matching labels and data arrays
 - Colors should be valid CSS colors or color arrays`,
       messages: [
@@ -62,11 +63,28 @@ IMPORTANT:
       ]
     });
     
+    // Handle metric type by converting to bar chart
+    const processedObject = {
+      ...object,
+      components: object.components.map(component => {
+        if (component.data.chartType === 'metric') {
+          return {
+            ...component,
+            data: {
+              ...component.data,
+              chartType: 'bar' // Convert metric to bar chart
+            }
+          };
+        }
+        return component;
+      })
+    };
+    
     console.log('=== FORMATTING COMPLETED ===');
-    console.log('Formatted result:', JSON.stringify(object, null, 2));
+    console.log('Formatted result:', JSON.stringify(processedObject, null, 2));
     console.log('=== END FORMATTING ===');
     
-    return Response.json(object);
+    return Response.json(processedObject);
   } catch (error) {
     console.error('Error in formatting:', error);
     return Response.json({ 

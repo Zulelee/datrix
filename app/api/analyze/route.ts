@@ -422,7 +422,7 @@ When returning analysis results, you must provide components in the following fo
       "position": { "x": 0, "y": 0 },
       "data": {
         "title": "Chart Title",
-        "chartType": "bar", 
+        "chartType": "bar", // IMPORTANT: Only use these supported types: "bar", "pie", "line", "area", or "donut"
         "dataset": {
           "labels": ["Label1", "Label2", "Label3"],
           "datasets": [
@@ -437,6 +437,10 @@ When returning analysis results, you must provide components in the following fo
     }
   ]
 }
+
+CRITICAL: For chartType, you MUST ONLY use one of these five supported types: "bar", "pie", "line", "area", or "donut".
+Do NOT use any other chart types like "metric", "table", "scatter", etc. - they will cause errors.
+For metrics or single values, use a "bar" chart with one data point.
 
 Be thorough, accurate, and focus on providing actionable insights from the data.`;
   } else {
