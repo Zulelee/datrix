@@ -29,7 +29,8 @@ import {
   AlertCircle,
   Zap,
   Clock,
-  Play
+  Play,
+  ChevronDown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
@@ -52,6 +53,24 @@ interface Integration {
   comingSoon?: boolean;
 }
 
+const roleOptions = [
+  'CEO / Founder',
+  'Sales Manager',
+  'Sales Representative',
+  'Marketing Manager',
+  'Data Analyst',
+  'Operations Manager',
+  'Business Analyst',
+  'Product Manager',
+  'Customer Success Manager',
+  'Administrative Assistant',
+  'Finance Manager',
+  'HR Manager',
+  'IT Manager',
+  'Consultant',
+  'Other'
+];
+
 export default function OnboardingPage() {
   const [mounted, setMounted] = useState(false);
   const [user, setUser] = useState<any>(null);
@@ -71,6 +90,7 @@ export default function OnboardingPage() {
   const [scriptCopied, setScriptCopied] = useState(false);
   const [testingTrigger, setTestingTrigger] = useState(false);
   const [triggerTestResult, setTriggerTestResult] = useState<string | null>(null);
+  const [showRoleDropdown, setShowRoleDropdown] = useState(false);
 
   const router = useRouter();
 
@@ -177,6 +197,11 @@ export default function OnboardingPage() {
       ...prev,
       [field]: value
     }));
+  };
+
+  const handleRoleSelect = (role: string) => {
+    handleProfileChange('role', role);
+    setShowRoleDropdown(false);
   };
 
   const handleConnectAirtable = async () => {
@@ -650,17 +675,45 @@ function webhookMain(action = 'fetch_emails',
             </div>
             
             <div className="space-y-4">
-              <div>
+              <div className="relative">
                 <Label htmlFor="role" className="text-[#3d0e15] font-ibm-plex font-medium">
                   What's your role?
                 </Label>
-                <Input
-                  id="role"
-                  value={userProfile.role}
-                  onChange={(e) => handleProfileChange('role', e.target.value)}
-                  className="hand-drawn-input bg-white/80 border-2 border-[#6e1d27] text-[#3d0e15] font-ibm-plex"
-                  placeholder="e.g., Sales Manager, Data Analyst, CEO"
-                />
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setShowRoleDropdown(!showRoleDropdown)}
+                    className="w-full hand-drawn-input bg-white/80 border-2 border-[#6e1d27] text-[#3d0e15] font-ibm-plex text-left flex items-center justify-between"
+                  >
+                    <span className={userProfile.role ? 'text-[#3d0e15]' : 'text-[#6e1d27]/60'}>
+                      {userProfile.role || 'Select your role'}
+                    </span>
+                    <ChevronDown className={`h-4 w-4 text-[#6e1d27] transition-transform duration-200 ${showRoleDropdown ? 'rotate-180' : ''}`} />
+                  </button>
+                  
+                  <AnimatePresence>
+                    {showRoleDropdown && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        transition={{ duration: 0.2 }}
+                        className="absolute top-full left-0 right-0 z-10 mt-1 bg-white border-2 border-[#6e1d27] rounded-lg shadow-lg max-h-60 overflow-y-auto"
+                      >
+                        {roleOptions.map((role) => (
+                          <button
+                            key={role}
+                            type="button"
+                            onClick={() => handleRoleSelect(role)}
+                            className="w-full text-left px-4 py-3 hover:bg-[#6e1d27]/10 transition-colors duration-200 font-ibm-plex text-[#3d0e15] border-b border-[#6e1d27]/10 last:border-b-0"
+                          >
+                            {role}
+                          </button>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
               </div>
               
               <div>
@@ -698,9 +751,9 @@ function webhookMain(action = 'fetch_emails',
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.4, delay: index * 0.1 }}
-                  className="relative group"
+                  className="relative group h-32" // Fixed height for consistency
                 >
-                  <div className={`p-4 rounded-lg border-2 transition-all duration-300 hand-drawn-border relative ${
+                  <div className={`h-full p-4 rounded-lg border-2 transition-all duration-300 hand-drawn-border relative flex flex-col justify-between ${
                     integration.connected
                       ? 'border-green-500 bg-green-50'
                       : integration.comingSoon
@@ -715,39 +768,43 @@ function webhookMain(action = 'fetch_emails',
                       </div>
                     )}
 
-                    <div className="flex items-center justify-between mb-3">
+                    {/* Top section with icon and name */}
+                    <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
                         <integration.icon 
-                          className="w-6 h-6" 
+                          className="w-6 h-6 flex-shrink-0" 
                           style={{ color: integration.color }}
                         />
-                        <span className="font-semibold text-[#3d0e15] font-ibm-plex">
+                        <span className="font-semibold text-[#3d0e15] font-ibm-plex text-sm">
                           {integration.name}
                         </span>
                       </div>
                       {integration.connected && (
-                        <CheckCircle className="w-5 h-5 text-green-500" />
+                        <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
                       )}
                     </div>
                     
-                    {integration.connected ? (
-                      <div className="text-sm text-green-600 font-ibm-plex flex items-center">
-                        <CheckCircle className="w-4 h-4 mr-1" />
-                        Connected
-                      </div>
-                    ) : integration.comingSoon ? (
-                      <div className="text-sm text-gray-500 font-ibm-plex">
-                        Available soon
-                      </div>
-                    ) : (
-                      <Button
-                        onClick={() => setSelectedModal(integration.id)}
-                        size="sm"
-                        className="w-full hand-drawn-button bg-[#6e1d27] hover:bg-[#912d3c] text-white font-ibm-plex"
-                      >
-                        Connect
-                      </Button>
-                    )}
+                    {/* Bottom section with status/button */}
+                    <div className="mt-3">
+                      {integration.connected ? (
+                        <div className="text-sm text-green-600 font-ibm-plex flex items-center">
+                          <CheckCircle className="w-4 h-4 mr-1" />
+                          Connected
+                        </div>
+                      ) : integration.comingSoon ? (
+                        <div className="text-sm text-gray-500 font-ibm-plex">
+                          Available soon
+                        </div>
+                      ) : (
+                        <Button
+                          onClick={() => setSelectedModal(integration.id)}
+                          size="sm"
+                          className="w-full hand-drawn-button bg-[#6e1d27] hover:bg-[#912d3c] text-white font-ibm-plex text-xs py-1"
+                        >
+                          Connect
+                        </Button>
+                      )}
+                    </div>
                   </div>
 
                   {/* Tooltip for coming soon items */}
