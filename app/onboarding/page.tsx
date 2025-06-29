@@ -683,7 +683,7 @@ function webhookMain(action = 'fetch_emails',
                   <button
                     type="button"
                     onClick={() => setShowRoleDropdown(!showRoleDropdown)}
-                    className="w-full hand-drawn-input bg-white/80 border-2 border-[#6e1d27] text-[#3d0e15] font-ibm-plex text-left flex items-center justify-between"
+                    className="w-full hand-drawn-input bg-white/80 border-2 border-[#6e1d27] text-[#3d0e15] font-ibm-plex text-left flex items-center justify-between px-3 py-2 h-10"
                   >
                     <span className={userProfile.role ? 'text-[#3d0e15]' : 'text-[#6e1d27]/60'}>
                       {userProfile.role || 'Select your role'}
