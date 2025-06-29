@@ -6,53 +6,247 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { FlickeringGrid } from '@/components/ui/flickering-grid';
 import { 
-  User, 
-  Building2, 
-  Target, 
-  Database,
-  CheckCircle,
-  ArrowRight,
   ArrowLeft,
-  Home,
-  MessageSquare,
-  BarChart3,
-  LogOut,
-  Sparkles,
-  Zap,
-  Globe,
-  Server,
-  Cloud,
+  ArrowRight,
+  CheckCircle,
+  Database,
+  FileSpreadsheet,
   FileText,
   Calendar,
   Slack,
+  Globe,
+  Server,
   Mail,
+  User,
+  Building2,
+  Target,
+  Briefcase,
   Copy,
+  Check,
   ExternalLink,
-  Play,
+  Eye,
+  EyeOff,
   AlertCircle,
-  Info,
-  FileSpreadsheet,
-  X
+  Zap,
+  Clock,
+  Play
 } from 'lucide-react';
-import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
-import { OnboardingNavbar } from '@/components/Navbar';
-import { saveUserDataSource, getUserDataSources, deleteUserDataSource } from '@/lib/saveDataSource';
+import { saveUserDataSource } from '@/lib/saveDataSource';
 
-interface DataSource {
+interface UserProfile {
+  name: string;
+  company: string;
+  role: string;
+  goal: string;
+}
+
+interface Integration {
   id: string;
   name: string;
   icon: React.ComponentType<any>;
-  description: string;
-  connected: boolean;
   color: string;
-  credentials?: any;
+  connected: boolean;
   comingSoon?: boolean;
 }
 
-const GOOGLE_APPS_SCRIPT = `/**
+export default function OnboardingPage() {
+  const [mounted, setMounted] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [currentStep, setCurrentStep] = useState(1);
+  const [userProfile, setUserProfile] = useState<UserProfile>({
+    name: '',
+    company: '',
+    role: '',
+    goal: ''
+  });
+  const [selectedModal, setSelectedModal] = useState<string | null>(null);
+  const [airtableToken, setAirtableToken] = useState('');
+  const [showToken, setShowToken] = useState(false);
+  const [wantsEmailTrigger, setWantsEmailTrigger] = useState<boolean | null>(null);
+  const [emailStep, setEmailStep] = useState(1);
+  const [scriptCopied, setScriptCopied] = useState(false);
+  const [testingTrigger, setTestingTrigger] = useState(false);
+  const [triggerTestResult, setTriggerTestResult] = useState<string | null>(null);
+
+  const router = useRouter();
+
+  const totalSteps = 7;
+
+  const integrations: Integration[] = [
+    {
+      id: 'airtable',
+      name: 'Airtable',
+      icon: Database,
+      color: '#ffb700',
+      connected: false
+    },
+    {
+      id: 'postgres',
+      name: 'PostgreSQL',
+      icon: Server,
+      color: '#336791',
+      connected: false,
+      comingSoon: true
+    },
+    {
+      id: 'sheets',
+      name: 'Google Sheets',
+      icon: FileSpreadsheet,
+      color: '#34a853',
+      connected: false,
+      comingSoon: true
+    },
+    {
+      id: 'notion',
+      name: 'Notion',
+      icon: FileText,
+      color: '#000000',
+      connected: false,
+      comingSoon: true
+    },
+    {
+      id: 'slack',
+      name: 'Slack',
+      icon: Slack,
+      color: '#4a154b',
+      connected: false,
+      comingSoon: true
+    },
+    {
+      id: 'calendar',
+      name: 'Google Calendar',
+      icon: Calendar,
+      color: '#4285f4',
+      connected: false,
+      comingSoon: true
+    },
+    {
+      id: 'api',
+      name: 'Custom API',
+      icon: Globe,
+      color: '#6366f1',
+      connected: false,
+      comingSoon: true
+    }
+  ];
+
+  const [integrationsState, setIntegrationsState] = useState(integrations);
+
+  useEffect(() => {
+    setMounted(true);
+    checkUser();
+  }, []);
+
+  const checkUser = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      router.push('/auth');
+      return;
+    }
+    setUser(user);
+    
+    // Pre-fill name from user metadata
+    if (user.user_metadata?.name) {
+      setUserProfile(prev => ({
+        ...prev,
+        name: user.user_metadata.name
+      }));
+    }
+    
+    setLoading(false);
+  };
+
+  const handleNext = () => {
+    if (currentStep < totalSteps) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
+
+  const handleBack = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
+  const handleProfileChange = (field: keyof UserProfile, value: string) => {
+    setUserProfile(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleConnectAirtable = async () => {
+    if (!airtableToken.trim()) {
+      alert('Please enter your Airtable access token');
+      return;
+    }
+
+    try {
+      const { error } = await saveUserDataSource(user.id, 'airtable', {
+        apiKey: airtableToken.trim()
+      });
+
+      if (error) {
+        alert('Failed to save Airtable connection: ' + error.message);
+        return;
+      }
+
+      // Update the integrations state
+      setIntegrationsState(prev =>
+        prev.map(integration =>
+          integration.id === 'airtable'
+            ? { ...integration, connected: true }
+            : integration
+        )
+      );
+
+      setSelectedModal(null);
+      setAirtableToken('');
+
+      // Show success animation
+      setTimeout(() => {
+        // Trigger confetti or success animation here if you have one
+      }, 100);
+
+    } catch (error) {
+      console.error('Error connecting Airtable:', error);
+      alert('An error occurred while connecting to Airtable');
+    }
+  };
+
+  const handleFinishOnboarding = async () => {
+    try {
+      // Save user profile to Supabase
+      const { error } = await supabase
+        .from('user_profiles')
+        .upsert({
+          id: user.id,
+          name: userProfile.name,
+          company: userProfile.company,
+          role: userProfile.role,
+          goal: userProfile.goal,
+          onboarding_complete: true
+        });
+
+      if (error) {
+        console.error('Error saving profile:', error);
+        alert('Error saving profile. Please try again.');
+        return;
+      }
+
+      // Redirect to dashboard
+      router.push('/dashboard');
+    } catch (error) {
+      console.error('Error finishing onboarding:', error);
+      alert('An error occurred. Please try again.');
+    }
+  };
+
+  const googleAppsScript = `/**
  * Gmail Data Fetcher with Make.com Webhook Integration
  * Avoids duplicate processing using Gmail labels
  * Sends processed email data to Make.com
@@ -355,129 +549,43 @@ function webhookMain(action = 'fetch_emails',
   return processWebhookData({ action, searchQuery, maxEmails }, {});
 }`;
 
-export default function OnboardingPage() {
-  const [mounted, setMounted] = useState(false);
-  const [currentStep, setCurrentStep] = useState(1);
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [formData, setFormData] = useState({
-    companyName: '',
-    role: '',
-    goals: ''
-  });
-  const [dataSources] = useState<DataSource[]>([
-    {
-      id: 'airtable',
-      name: 'Airtable',
-      icon: Database,
-      description: 'Connect your Airtable bases',
-      connected: false,
-      color: '#ffb700'
-    },
-    {
-      id: 'postgres',
-      name: 'PostgreSQL',
-      icon: Server,
-      description: 'Connect your PostgreSQL database',
-      connected: false,
-      color: '#336791',
-      comingSoon: true
-    },
-    {
-      id: 'sheets',
-      name: 'Google Sheets',
-      icon: FileSpreadsheet,
-      description: 'Connect your Google Sheets',
-      connected: false,
-      color: '#34a853',
-      comingSoon: true
-    },
-    {
-      id: 'notion',
-      name: 'Notion',
-      icon: FileText,
-      description: 'Connect your Notion workspace',
-      connected: false,
-      color: '#000000',
-      comingSoon: true
-    },
-    {
-      id: 'slack',
-      name: 'Slack',
-      icon: Slack,
-      description: 'Connect your Slack workspace',
-      connected: false,
-      color: '#4a154b',
-      comingSoon: true
-    },
-    {
-      id: 'calendar',
-      name: 'Google Calendar',
-      icon: Calendar,
-      description: 'Connect your calendar events',
-      connected: false,
-      color: '#4285f4',
-      comingSoon: true
-    },
-    {
-      id: 'api',
-      name: 'Custom API',
-      icon: Globe,
-      description: 'Connect via REST API',
-      connected: false,
-      color: '#6366f1',
-      comingSoon: true
+  const copyScript = async () => {
+    try {
+      await navigator.clipboard.writeText(googleAppsScript);
+      setScriptCopied(true);
+      setTimeout(() => setScriptCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy script:', err);
     }
-  ]);
-  const [selectedModal, setSelectedModal] = useState<string | null>(null);
-  const [showConfetti, setShowConfetti] = useState(false);
-  const [modalInputs, setModalInputs] = useState<{[key: string]: string}>({});
-  const [airtableConnected, setAirtableConnected] = useState(false);
-  const [wantsEmailTrigger, setWantsEmailTrigger] = useState<boolean | null>(null);
-  const [emailTriggerStep, setEmailTriggerStep] = useState(1);
-  const [scriptCopied, setScriptCopied] = useState(false);
-  const [triggerTested, setTriggerTested] = useState(false);
-
-  const router = useRouter();
-
-  const totalSteps = 7; // Updated to include email trigger steps
-  const roles = [
-    'Founder/CEO',
-    'CTO/Engineering',
-    'Product Manager',
-    'Data Analyst',
-    'Operations',
-    'Marketing',
-    'Sales',
-    'Other'
-  ];
-
-  useEffect(() => {
-    setMounted(true);
-    checkUser();
-  }, []);
-
-  const checkUser = async () => {
-    const { data, error } = await supabase.auth.getUser();
-    if (data?.user) {
-      setUser(data.user);
-      // Check if onboarding is already complete
-      await checkOnboardingStatus(data.user.id);
-    } else {
-      router.push('/auth');
-    }
-    setLoading(false);
   };
 
-  const checkOnboardingStatus = async (userId: string) => {
-    const { data, error } = await supabase
-      .from('user_profiles')
-      .select('onboarding_complete')
-      .eq('id', userId)
-      .single();
+  const testTrigger = async () => {
+    setTestingTrigger(true);
+    setTriggerTestResult(null);
 
-    if (data?.onboarding_complete) {
-      router.push('/dashboard');
+    try {
+      const response = await fetch('/api/webhook', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          test: true,
+          source: 'onboarding-test',
+          timestamp: new Date().toISOString(),
+          user_email: user?.email
+        }),
+      });
+
+      if (response.ok) {
+        setTriggerTestResult('✅ Webhook test successful! Your trigger is working.');
+      } else {
+        setTriggerTestResult('❌ Webhook test failed. Please check your setup.');
+      }
+    } catch (error) {
+      setTriggerTestResult('❌ Connection error. Please try again.');
+    } finally {
+      setTestingTrigger(false);
     }
   };
 
@@ -485,116 +593,521 @@ export default function OnboardingPage() {
     return null;
   }
 
-  const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
+  const renderStep = () => {
+    switch (currentStep) {
+      case 1:
+        return (
+          <div className="space-y-6">
+            <div className="text-center">
+              <h2 className="text-2xl font-bold text-[#3d0e15] font-ibm-plex hand-drawn-text mb-2">
+                Welcome to Datrix! 👋
+              </h2>
+              <p className="text-[#6e1d27] font-ibm-plex">
+                Let's get you set up in just a few steps
+              </p>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="name" className="text-[#3d0e15] font-ibm-plex font-medium">
+                  What's your name?
+                </Label>
+                <Input
+                  id="name"
+                  value={userProfile.name}
+                  onChange={(e) => handleProfileChange('name', e.target.value)}
+                  className="hand-drawn-input bg-white/80 border-2 border-[#6e1d27] text-[#3d0e15] font-ibm-plex"
+                  placeholder="Enter your full name"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="company" className="text-[#3d0e15] font-ibm-plex font-medium">
+                  Company (optional)
+                </Label>
+                <Input
+                  id="company"
+                  value={userProfile.company}
+                  onChange={(e) => handleProfileChange('company', e.target.value)}
+                  className="hand-drawn-input bg-white/80 border-2 border-[#6e1d27] text-[#3d0e15] font-ibm-plex"
+                  placeholder="Your company name"
+                />
+              </div>
+            </div>
+          </div>
+        );
 
-  const connectAirtable = async () => {
-    if (!modalInputs.apiKey) {
-      alert('Please enter your Airtable API key');
-      return;
+      case 2:
+        return (
+          <div className="space-y-6">
+            <div className="text-center">
+              <h2 className="text-2xl font-bold text-[#3d0e15] font-ibm-plex hand-drawn-text mb-2">
+                Tell us about your role 💼
+              </h2>
+              <p className="text-[#6e1d27] font-ibm-plex">
+                This helps us personalize your experience
+              </p>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="role" className="text-[#3d0e15] font-ibm-plex font-medium">
+                  What's your role?
+                </Label>
+                <Input
+                  id="role"
+                  value={userProfile.role}
+                  onChange={(e) => handleProfileChange('role', e.target.value)}
+                  className="hand-drawn-input bg-white/80 border-2 border-[#6e1d27] text-[#3d0e15] font-ibm-plex"
+                  placeholder="e.g., Sales Manager, Data Analyst, CEO"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="goal" className="text-[#3d0e15] font-ibm-plex font-medium">
+                  What's your main goal with Datrix?
+                </Label>
+                <Input
+                  id="goal"
+                  value={userProfile.goal}
+                  onChange={(e) => handleProfileChange('goal', e.target.value)}
+                  className="hand-drawn-input bg-white/80 border-2 border-[#6e1d27] text-[#3d0e15] font-ibm-plex"
+                  placeholder="e.g., Automate data entry, Generate reports"
+                />
+              </div>
+            </div>
+          </div>
+        );
+
+      case 3:
+        return (
+          <div className="space-y-6">
+            <div className="text-center">
+              <h2 className="text-2xl font-bold text-[#3d0e15] font-ibm-plex hand-drawn-text mb-2">
+                Connect Your Data Sources 🔗
+              </h2>
+              <p className="text-[#6e1d27] font-ibm-plex">
+                Choose where you want to store and organize your data
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {integrationsState.map((integration, index) => (
+                <motion.div
+                  key={integration.id}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.4, delay: index * 0.1 }}
+                  className="relative group"
+                >
+                  <div className={`p-4 rounded-lg border-2 transition-all duration-300 hand-drawn-border relative ${
+                    integration.connected
+                      ? 'border-green-500 bg-green-50'
+                      : integration.comingSoon
+                      ? 'border-[#6e1d27]/20 bg-gray-50 opacity-60'
+                      : 'border-[#6e1d27]/30 bg-white/50 hover:border-[#6e1d27] hover:bg-white/80'
+                  }`}>
+                    
+                    {/* Coming Soon Badge */}
+                    {integration.comingSoon && (
+                      <div className="absolute -top-2 -right-2 bg-[#6e1d27] text-white text-xs px-2 py-1 rounded-full font-ibm-plex">
+                        Coming Soon
+                      </div>
+                    )}
+
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center space-x-3">
+                        <integration.icon 
+                          className="w-6 h-6" 
+                          style={{ color: integration.color }}
+                        />
+                        <span className="font-semibold text-[#3d0e15] font-ibm-plex">
+                          {integration.name}
+                        </span>
+                      </div>
+                      {integration.connected && (
+                        <CheckCircle className="w-5 h-5 text-green-500" />
+                      )}
+                    </div>
+                    
+                    {integration.connected ? (
+                      <div className="text-sm text-green-600 font-ibm-plex flex items-center">
+                        <CheckCircle className="w-4 h-4 mr-1" />
+                        Connected
+                      </div>
+                    ) : integration.comingSoon ? (
+                      <div className="text-sm text-gray-500 font-ibm-plex">
+                        Available soon
+                      </div>
+                    ) : (
+                      <Button
+                        onClick={() => setSelectedModal(integration.id)}
+                        size="sm"
+                        className="w-full hand-drawn-button bg-[#6e1d27] hover:bg-[#912d3c] text-white font-ibm-plex"
+                      >
+                        Connect
+                      </Button>
+                    )}
+                  </div>
+
+                  {/* Tooltip for coming soon items */}
+                  {integration.comingSoon && (
+                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-[#3d0e15] text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none whitespace-nowrap">
+                      Coming Soon
+                      <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-[#3d0e15]"></div>
+                    </div>
+                  )}
+                </motion.div>
+              ))}
+            </div>
+
+            <div className="text-center text-sm text-[#6e1d27] font-ibm-plex">
+              You can always add more integrations later in your profile settings
+            </div>
+          </div>
+        );
+
+      case 4:
+        return (
+          <div className="space-y-6">
+            <div className="text-center">
+              <h2 className="text-2xl font-bold text-[#3d0e15] font-ibm-plex hand-drawn-text mb-2">
+                🎉 Great! You're all set up
+              </h2>
+              <p className="text-[#6e1d27] font-ibm-plex">
+                Your data sources are connected and ready to use
+              </p>
+            </div>
+
+            <div className="bg-green-50 border-2 border-green-200 rounded-lg p-6 hand-drawn-border">
+              <div className="flex items-center space-x-3 mb-4">
+                <CheckCircle className="w-6 h-6 text-green-500" />
+                <h3 className="font-semibold text-green-800 font-ibm-plex">
+                  Setup Complete!
+                </h3>
+              </div>
+              <div className="space-y-2 text-sm text-green-700 font-ibm-plex">
+                <p>✅ Profile information saved</p>
+                <p>✅ {integrationsState.filter(i => i.connected).length} integration(s) connected</p>
+                <p>✅ Ready to start organizing your data</p>
+              </div>
+            </div>
+
+            <div className="text-center">
+              <p className="text-[#6e1d27] font-ibm-plex mb-4">
+                Ready to start using Datrix? You can always come back to add more integrations.
+              </p>
+            </div>
+          </div>
+        );
+
+      case 5:
+        return (
+          <div className="space-y-6">
+            <div className="text-center">
+              <h2 className="text-2xl font-bold text-[#3d0e15] font-ibm-plex hand-drawn-text mb-2">
+                Email Automation Setup 📧
+              </h2>
+              <p className="text-[#6e1d27] font-ibm-plex">
+                Would you like to set up automatic email processing?
+              </p>
+            </div>
+
+            <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-6 hand-drawn-border">
+              <div className="flex items-start space-x-3 mb-4">
+                <Mail className="w-6 h-6 text-blue-500 mt-1" />
+                <div>
+                  <h3 className="font-semibold text-blue-800 font-ibm-plex mb-2">
+                    What is Email Automation?
+                  </h3>
+                  <div className="space-y-2 text-sm text-blue-700 font-ibm-plex">
+                    <p>• Automatically process incoming emails with attachments</p>
+                    <p>• Extract data from invoices, orders, and business documents</p>
+                    <p>• Send structured data directly to your connected systems</p>
+                    <p>• Save time on manual data entry</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button
+                onClick={() => {
+                  setWantsEmailTrigger(true);
+                  setCurrentStep(6);
+                }}
+                className="hand-drawn-button bg-[#6e1d27] hover:bg-[#912d3c] text-white font-ibm-plex px-8 py-3"
+              >
+                <Zap className="mr-2 h-5 w-5" />
+                Yes, Set Up Email Automation
+              </Button>
+              <Button
+                onClick={() => {
+                  setWantsEmailTrigger(false);
+                  setCurrentStep(7);
+                }}
+                variant="outline"
+                className="hand-drawn-border border-2 border-[#6e1d27] text-[#6e1d27] hover:bg-[#6e1d27] hover:text-white font-ibm-plex px-8 py-3"
+              >
+                Skip for Now
+              </Button>
+            </div>
+          </div>
+        );
+
+      case 6:
+        if (!wantsEmailTrigger) {
+          setCurrentStep(7);
+          return null;
+        }
+
+        return (
+          <div className="space-y-6">
+            <div className="text-center">
+              <h2 className="text-2xl font-bold text-[#3d0e15] font-ibm-plex hand-drawn-text mb-2">
+                Email Trigger Setup 🔧
+              </h2>
+              <p className="text-[#6e1d27] font-ibm-plex">
+                Follow these steps to set up your Gmail automation
+              </p>
+            </div>
+
+            <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-4 hand-drawn-border">
+              <div className="flex items-center space-x-2 text-yellow-800">
+                <AlertCircle className="w-5 h-5" />
+                <p className="font-ibm-plex text-sm">
+                  <strong>Important:</strong> Use the same email address you signed up with: <strong>{user?.email}</strong>
+                </p>
+              </div>
+            </div>
+
+            {/* Step Navigation */}
+            <div className="flex justify-center mb-6">
+              <div className="flex space-x-2">
+                {[1, 2, 3, 4, 5].map((step) => (
+                  <div
+                    key={step}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
+                      step <= emailStep
+                        ? 'bg-[#6e1d27] text-white'
+                        : 'bg-gray-200 text-gray-500'
+                    }`}
+                  >
+                    {step}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Step Content */}
+            <div className="space-y-4">
+              {emailStep === 1 && (
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-[#3d0e15] font-ibm-plex">
+                    Step 1: Go to Google Apps Script
+                  </h3>
+                  <p className="text-[#6e1d27] font-ibm-plex text-sm">
+                    We currently support Gmail triggers. Click the button below to open Google Apps Script.
+                  </p>
+                  <Button
+                    onClick={() => window.open('https://script.google.com/', '_blank')}
+                    className="hand-drawn-button bg-[#6e1d27] hover:bg-[#912d3c] text-white font-ibm-plex"
+                  >
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                    Open Google Apps Script
+                  </Button>
+                </div>
+              )}
+
+              {emailStep === 2 && (
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-[#3d0e15] font-ibm-plex">
+                    Step 2: Login and Create New Script
+                  </h3>
+                  <div className="space-y-2 text-[#6e1d27] font-ibm-plex text-sm">
+                    <p>1. Login with your email: <strong>{user?.email}</strong></p>
+                    <p>2. Click "New Project" to create a new script</p>
+                    <p>3. You'll see a code editor with a default function</p>
+                  </div>
+                </div>
+              )}
+
+              {emailStep === 3 && (
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-[#3d0e15] font-ibm-plex">
+                    Step 3: Paste the Script
+                  </h3>
+                  <p className="text-[#6e1d27] font-ibm-plex text-sm">
+                    Replace all the default code with this script:
+                  </p>
+                  <div className="relative">
+                    <pre className="bg-gray-100 p-4 rounded-lg text-xs overflow-x-auto max-h-64 border-2 border-[#6e1d27]/20">
+                      <code>{googleAppsScript}</code>
+                    </pre>
+                    <Button
+                      onClick={copyScript}
+                      size="sm"
+                      className="absolute top-2 right-2 hand-drawn-button bg-[#6e1d27] hover:bg-[#912d3c] text-white"
+                    >
+                      {scriptCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                  {scriptCopied && (
+                    <p className="text-green-600 text-sm font-ibm-plex">
+                      ✅ Script copied to clipboard!
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {emailStep === 4 && (
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-[#3d0e15] font-ibm-plex">
+                    Step 4: Create Trigger
+                  </h3>
+                  <div className="space-y-2 text-[#6e1d27] font-ibm-plex text-sm">
+                    <p>1. Click on the "Triggers" icon (clock icon) in the left sidebar</p>
+                    <p>2. Click "Add Trigger" button</p>
+                    <p>3. Configure the trigger with these settings:</p>
+                    <div className="bg-blue-50 p-3 rounded border-l-4 border-blue-400 ml-4">
+                      <p><strong>Function to run:</strong> main</p>
+                      <p><strong>Deployment:</strong> Head</p>
+                      <p><strong>Event source:</strong> Time-driven</p>
+                      <p><strong>Type:</strong> Minutes timer</p>
+                      <p><strong>Interval:</strong> Every 5 minutes (or your preference)</p>
+                    </div>
+                    <p>4. Click "Save" to create the trigger</p>
+                  </div>
+                </div>
+              )}
+
+              {emailStep === 5 && (
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-[#3d0e15] font-ibm-plex">
+                    Step 5: Test Your Trigger
+                  </h3>
+                  <p className="text-[#6e1d27] font-ibm-plex text-sm">
+                    Click the button below to test if your webhook is working correctly:
+                  </p>
+                  <Button
+                    onClick={testTrigger}
+                    disabled={testingTrigger}
+                    className="hand-drawn-button bg-[#6e1d27] hover:bg-[#912d3c] text-white font-ibm-plex"
+                  >
+                    {testingTrigger ? (
+                      <>
+                        <Clock className="mr-2 h-4 w-4 animate-spin" />
+                        Testing...
+                      </>
+                    ) : (
+                      <>
+                        <Play className="mr-2 h-4 w-4" />
+                        Test Trigger
+                      </>
+                    )}
+                  </Button>
+                  {triggerTestResult && (
+                    <div className={`p-3 rounded border-l-4 ${
+                      triggerTestResult.includes('✅') 
+                        ? 'bg-green-50 border-green-400 text-green-700' 
+                        : 'bg-red-50 border-red-400 text-red-700'
+                    }`}>
+                      <p className="font-ibm-plex text-sm">{triggerTestResult}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Navigation */}
+            <div className="flex justify-between">
+              <Button
+                onClick={() => setEmailStep(Math.max(1, emailStep - 1))}
+                disabled={emailStep === 1}
+                variant="outline"
+                className="hand-drawn-border border-2 border-[#6e1d27] text-[#6e1d27] hover:bg-[#6e1d27] hover:text-white font-ibm-plex"
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Previous
+              </Button>
+              <Button
+                onClick={() => {
+                  if (emailStep === 5) {
+                    setCurrentStep(7);
+                  } else {
+                    setEmailStep(emailStep + 1);
+                  }
+                }}
+                className="hand-drawn-button bg-[#6e1d27] hover:bg-[#912d3c] text-white font-ibm-plex"
+              >
+                {emailStep === 5 ? 'Complete Setup' : 'Next'}
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        );
+
+      case 7:
+        return (
+          <div className="space-y-6">
+            <div className="text-center">
+              <h2 className="text-2xl font-bold text-[#3d0e15] font-ibm-plex hand-drawn-text mb-2">
+                🎉 Welcome to Datrix!
+              </h2>
+              <p className="text-[#6e1d27] font-ibm-plex">
+                You're all set up and ready to start organizing your data
+              </p>
+            </div>
+
+            <div className="bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-200 rounded-lg p-6 hand-drawn-border">
+              <div className="space-y-4">
+                <div className="flex items-center space-x-3">
+                  <CheckCircle className="w-6 h-6 text-green-500" />
+                  <h3 className="font-semibold text-green-800 font-ibm-plex">
+                    Setup Summary
+                  </h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div className="space-y-2">
+                    <p className="text-green-700 font-ibm-plex">
+                      <strong>Profile:</strong> {userProfile.name}
+                    </p>
+                    {userProfile.company && (
+                      <p className="text-green-700 font-ibm-plex">
+                        <strong>Company:</strong> {userProfile.company}
+                      </p>
+                    )}
+                    <p className="text-green-700 font-ibm-plex">
+                      <strong>Role:</strong> {userProfile.role}
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-green-700 font-ibm-plex">
+                      <strong>Integrations:</strong> {integrationsState.filter(i => i.connected).length} connected
+                    </p>
+                    <p className="text-green-700 font-ibm-plex">
+                      <strong>Email Automation:</strong> {wantsEmailTrigger ? 'Enabled' : 'Skipped'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="text-center">
+              <Button
+                onClick={handleFinishOnboarding}
+                className="hand-drawn-button bg-[#6e1d27] hover:bg-[#912d3c] text-white font-ibm-plex px-8 py-3 text-lg"
+              >
+                Start Using Datrix
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+            </div>
+          </div>
+        );
+
+      default:
+        return null;
     }
-
-    const credentials = {
-      apiKey: modalInputs.apiKey,
-      baseId: modalInputs.baseId || '',
-    };
-
-    const { error } = await saveUserDataSource(user.id, 'airtable', credentials);
-    if (error) {
-      alert("Failed to save credentials: " + error.message);
-      return;
-    }
-
-    setAirtableConnected(true);
-    setSelectedModal(null);
-    setModalInputs({});
-    
-    // Show brief success animation
-    setTimeout(() => {
-      setShowConfetti(true);
-      setTimeout(() => setShowConfetti(false), 2000);
-    }, 500);
-  };
-
-  const nextStep = () => {
-    if (currentStep < totalSteps) {
-      setCurrentStep(currentStep + 1);
-    }
-  };
-
-  const prevStep = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
-    }
-  };
-
-  const copyScript = async () => {
-    try {
-      await navigator.clipboard.writeText(GOOGLE_APPS_SCRIPT);
-      setScriptCopied(true);
-      setTimeout(() => setScriptCopied(false), 3000);
-    } catch (err) {
-      console.error('Failed to copy script:', err);
-    }
-  };
-
-  const testTrigger = async () => {
-    try {
-      const response = await fetch('https://datrix.app/api/webhook', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          test: true,
-          userId: user.id,
-          timestamp: new Date().toISOString()
-        })
-      });
-
-      if (response.ok) {
-        setTriggerTested(true);
-        alert('Trigger test successful! Your email integration is working.');
-      } else {
-        alert('Trigger test failed. Please check your setup.');
-      }
-    } catch (error) {
-      alert('Trigger test failed. Please check your setup.');
-    }
-  };
-
-  const finishOnboarding = async () => {
-    // Save user profile data
-    const { error } = await supabase
-      .from('user_profiles')
-      .upsert({
-        id: user.id,
-        name: user.user_metadata?.name || '',
-        company: formData.companyName,
-        role: formData.role,
-        goal: formData.goals,
-        onboarding_complete: true
-      });
-
-    if (error) {
-      console.error('Error saving profile:', error);
-      alert('Error saving profile. Please try again.');
-      return;
-    }
-
-    setShowConfetti(true);
-    setTimeout(() => {
-      router.push('/dashboard');
-    }, 3000);
-  };
-
-  const logout = async () => {
-    await supabase.auth.signOut();
-    router.push('/');
   };
 
   return (
@@ -611,726 +1124,39 @@ export default function OnboardingPage() {
         />
       </div>
 
-      {/* Navbar for Signed-in Users */}
-      <OnboardingNavbar onLogout={logout} />
-
-      {/* Confetti Effect */}
-      <AnimatePresence>
-        {showConfetti && (
-          <div className="fixed inset-0 z-50 pointer-events-none">
-            {[...Array(50)].map((_, i) => (
-              <motion.div
-                key={i}
-                className="absolute w-2 h-2 bg-[#6e1d27] rounded-full"
-                initial={{
-                  x: Math.random() * window.innerWidth,
-                  y: -10,
-                  rotate: 0,
-                  scale: Math.random() * 0.5 + 0.5
-                }}
-                animate={{
-                  y: window.innerHeight + 10,
-                  rotate: 360,
-                  transition: {
-                    duration: Math.random() * 2 + 2,
-                    ease: "easeOut"
-                  }
-                }}
-                exit={{ opacity: 0 }}
-              />
-            ))}
-          </div>
-        )}
-      </AnimatePresence>
-
       {/* Main Content */}
-      <div className="relative z-10 flex items-center justify-center min-h-screen px-4 sm:px-6 lg:px-8 pt-16">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
-          className="w-full max-w-2xl"
-        >
-          {/* Hand-drawn container */}
-          <div className="hand-drawn-container bg-white/60 backdrop-blur-sm p-8 relative">
-            {/* Progress Bar */}
-            <div className="mb-8">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-sm font-medium text-[#6e1d27] font-ibm-plex">
-                  Step {currentStep} of {totalSteps}
-                </span>
-                <span className="text-sm font-medium text-[#6e1d27] font-ibm-plex">
-                  {Math.round((currentStep / totalSteps) * 100)}%
-                </span>
-              </div>
-              <div className="w-full bg-[#6e1d27]/20 rounded-full h-2 hand-drawn-border">
-                <motion.div
-                  className="bg-[#6e1d27] h-2 rounded-full"
-                  initial={{ width: 0 }}
-                  animate={{ width: `${(currentStep / totalSteps) * 100}%` }}
-                  transition={{ duration: 0.5, ease: "easeOut" }}
-                />
-              </div>
+      <div className="relative z-10 min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8">
+        <div className="w-full max-w-2xl mx-auto">
+          
+          {/* Progress Bar */}
+          <div className="mb-8">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-sm font-medium text-[#6e1d27] font-ibm-plex">
+                Step {currentStep} of {totalSteps}
+              </span>
+              <span className="text-sm font-medium text-[#6e1d27] font-ibm-plex">
+                {Math.round((currentStep / totalSteps) * 100)}%
+              </span>
             </div>
+            <div className="w-full bg-[#6e1d27]/20 rounded-full h-2">
+              <motion.div
+                className="bg-[#6e1d27] h-2 rounded-full"
+                initial={{ width: 0 }}
+                animate={{ width: `${(currentStep / totalSteps) * 100}%` }}
+                transition={{ duration: 0.5, ease: "easeOut" }}
+              />
+            </div>
+          </div>
 
-            {/* Step Content */}
-            <AnimatePresence mode="wait">
-              {/* Step 1: Welcome */}
-              {currentStep === 1 && (
-                <motion.div
-                  key="step1"
-                  initial={{ opacity: 0, x: 50 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -50 }}
-                  transition={{ duration: 0.4 }}
-                  className="text-center space-y-6"
-                >
-                  <div className="space-y-4">
-                    <motion.div
-                      initial={{ scale: 0.8 }}
-                      animate={{ scale: 1 }}
-                      transition={{ delay: 0.2, duration: 0.5 }}
-                      className="w-20 h-20 mx-auto bg-[#6e1d27]/10 rounded-full flex items-center justify-center hand-drawn-border"
-                    >
-                      <Sparkles className="w-10 h-10 text-[#6e1d27]" />
-                    </motion.div>
-                    <h1 className="text-3xl font-bold text-[#3d0e15] font-ibm-plex hand-drawn-text">
-                      Welcome to Datrix, {user?.user_metadata?.name || 'there'}!
-                    </h1>
-                    <p className="text-lg text-[#6e1d27] font-ibm-plex leading-relaxed">
-                      Let's get you set up in just a few quick steps. We'll help you connect your data sources and create your first insights dashboard.
-                    </p>
-                  </div>
-                  <Button
-                    onClick={nextStep}
-                    className="hand-drawn-button bg-[#6e1d27] hover:bg-[#912d3c] text-white px-8 py-3 text-lg font-semibold font-ibm-plex"
-                  >
-                    Let's Get Started
-                    <ArrowRight className="ml-2 h-5 w-5" />
-                  </Button>
-                </motion.div>
-              )}
-
-              {/* Step 2: Company Information */}
-              {currentStep === 2 && (
-                <motion.div
-                  key="step2"
-                  initial={{ opacity: 0, x: 50 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -50 }}
-                  transition={{ duration: 0.4 }}
-                  className="space-y-6"
-                >
-                  <div className="text-center space-y-4">
-                    <div className="w-16 h-16 mx-auto bg-[#6e1d27]/10 rounded-full flex items-center justify-center hand-drawn-border">
-                      <Building2 className="w-8 h-8 text-[#6e1d27]" />
-                    </div>
-                    <h2 className="text-2xl font-bold text-[#3d0e15] font-ibm-plex hand-drawn-text">
-                      What's your company called?
-                    </h2>
-                    <p className="text-[#6e1d27] font-ibm-plex">
-                      This helps us personalize your experience
-                    </p>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <Label htmlFor="companyName" className="text-[#3d0e15] font-ibm-plex font-medium hand-drawn-text">
-                      Company Name
-                    </Label>
-                    <Input
-                      id="companyName"
-                      value={formData.companyName}
-                      onChange={(e) => handleInputChange('companyName', e.target.value)}
-                      className="hand-drawn-input bg-white/80 border-2 border-[#6e1d27] text-[#3d0e15] placeholder-[#6e1d27]/60 font-ibm-plex text-lg h-12"
-                      placeholder="Enter your company name"
-                    />
-                  </div>
-
-                  <div className="flex justify-between">
-                    <Button
-                      onClick={prevStep}
-                      variant="outline"
-                      className="hand-drawn-border border-2 border-[#6e1d27] text-[#6e1d27] hover:bg-[#6e1d27] hover:text-white font-ibm-plex"
-                    >
-                      <ArrowLeft className="mr-2 h-4 w-4" />
-                      Back
-                    </Button>
-                    <Button
-                      onClick={nextStep}
-                      disabled={!formData.companyName.trim()}
-                      className="hand-drawn-button bg-[#6e1d27] hover:bg-[#912d3c] text-white font-ibm-plex disabled:opacity-50"
-                    >
-                      Continue
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </div>
-                </motion.div>
-              )}
-
-              {/* Step 3: Role */}
-              {currentStep === 3 && (
-                <motion.div
-                  key="step3"
-                  initial={{ opacity: 0, x: 50 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -50 }}
-                  transition={{ duration: 0.4 }}
-                  className="space-y-6"
-                >
-                  <div className="text-center space-y-4">
-                    <div className="w-16 h-16 mx-auto bg-[#6e1d27]/10 rounded-full flex items-center justify-center hand-drawn-border">
-                      <User className="w-8 h-8 text-[#6e1d27]" />
-                    </div>
-                    <h2 className="text-2xl font-bold text-[#3d0e15] font-ibm-plex hand-drawn-text">
-                      What's your role at {formData.companyName}?
-                    </h2>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-3">
-                    {roles.map((role) => (
-                      <button
-                        key={role}
-                        onClick={() => handleInputChange('role', role)}
-                        className={`p-4 rounded-lg border-2 transition-all duration-300 font-ibm-plex text-sm hand-drawn-border ${
-                          formData.role === role
-                            ? 'border-[#6e1d27] bg-[#6e1d27] text-white'
-                            : 'border-[#6e1d27]/30 bg-white/50 text-[#6e1d27] hover:border-[#6e1d27] hover:bg-[#6e1d27]/10'
-                        }`}
-                      >
-                        {role}
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="flex justify-between">
-                    <Button
-                      onClick={prevStep}
-                      variant="outline"
-                      className="hand-drawn-border border-2 border-[#6e1d27] text-[#6e1d27] hover:bg-[#6e1d27] hover:text-white font-ibm-plex"
-                    >
-                      <ArrowLeft className="mr-2 h-4 w-4" />
-                      Back
-                    </Button>
-                    <Button
-                      onClick={nextStep}
-                      disabled={!formData.role}
-                      className="hand-drawn-button bg-[#6e1d27] hover:bg-[#912d3c] text-white font-ibm-plex disabled:opacity-50"
-                    >
-                      Continue
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </div>
-                </motion.div>
-              )}
-
-              {/* Step 4: Goals */}
-              {currentStep === 4 && (
-                <motion.div
-                  key="step4"
-                  initial={{ opacity: 0, x: 50 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -50 }}
-                  transition={{ duration: 0.4 }}
-                  className="space-y-6"
-                >
-                  <div className="text-center space-y-4">
-                    <div className="w-16 h-16 mx-auto bg-[#6e1d27]/10 rounded-full flex items-center justify-center hand-drawn-border">
-                      <Target className="w-8 h-8 text-[#6e1d27]" />
-                    </div>
-                    <h2 className="text-2xl font-bold text-[#3d0e15] font-ibm-plex hand-drawn-text">
-                      What do you want to achieve with Datrix?
-                    </h2>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <Label htmlFor="goals" className="text-[#3d0e15] font-ibm-plex font-medium hand-drawn-text">
-                      Your Goals
-                    </Label>
-                    <textarea
-                      id="goals"
-                      value={formData.goals}
-                      onChange={(e) => handleInputChange('goals', e.target.value)}
-                      className="w-full h-32 p-4 hand-drawn-input bg-white/80 border-2 border-[#6e1d27] text-[#3d0e15] placeholder-[#6e1d27]/60 font-ibm-plex resize-none"
-                      placeholder="Tell us about your data challenges and what insights you're looking for..."
-                    />
-                  </div>
-
-                  <div className="flex justify-between">
-                    <Button
-                      onClick={prevStep}
-                      variant="outline"
-                      className="hand-drawn-border border-2 border-[#6e1d27] text-[#6e1d27] hover:bg-[#6e1d27] hover:text-white font-ibm-plex"
-                    >
-                      <ArrowLeft className="mr-2 h-4 w-4" />
-                      Back
-                    </Button>
-                    <Button
-                      onClick={nextStep}
-                      disabled={!formData.goals.trim()}
-                      className="hand-drawn-button bg-[#6e1d27] hover:bg-[#912d3c] text-white font-ibm-plex disabled:opacity-50"
-                    >
-                      Continue
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </div>
-                </motion.div>
-              )}
-
-              {/* Step 5: Connect Airtable */}
-              {currentStep === 5 && (
-                <motion.div
-                  key="step5"
-                  initial={{ opacity: 0, x: 50 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -50 }}
-                  transition={{ duration: 0.4 }}
-                  className="space-y-6"
-                >
-                  <div className="text-center space-y-4">
-                    <div className="w-16 h-16 mx-auto bg-[#6e1d27]/10 rounded-full flex items-center justify-center hand-drawn-border">
-                      <Database className="w-8 h-8 text-[#6e1d27]" />
-                    </div>
-                    <h2 className="text-2xl font-bold text-[#3d0e15] font-ibm-plex hand-drawn-text">
-                      Connect Airtable
-                    </h2>
-                    <p className="text-[#6e1d27] font-ibm-plex">
-                      Connect your Airtable account to start organizing your data
-                    </p>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 gap-4">
-                    <div className="p-4 rounded-lg border-2 border-[#6e1d27]/30 bg-white/50 hand-drawn-border">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <Database className="w-6 h-6" style={{ color: '#ffb700' }} />
-                        <span className="font-semibold text-[#3d0e15] font-ibm-plex">Airtable</span>
-                        {airtableConnected && <CheckCircle className="w-5 h-5 text-green-500" />}
-                      </div>
-                      <p className="text-sm text-[#6e1d27] font-ibm-plex mb-3">
-                        Connect your Airtable bases
-                      </p>
-                      <Button
-                        onClick={() => { setSelectedModal('airtable'); setModalInputs({}); }}
-                        disabled={airtableConnected}
-                        className={`w-full text-sm font-ibm-plex ${
-                          airtableConnected
-                            ? 'bg-green-500 text-white cursor-default'
-                            : 'hand-drawn-button bg-[#6e1d27] hover:bg-[#912d3c] text-white'
-                        }`}
-                      >
-                        {airtableConnected ? 'Connected!' : 'Connect'}
-                      </Button>
-                    </div>
-
-                    {/* Coming Soon Platforms */}
-                    <div className="grid grid-cols-2 gap-3">
-                      {dataSources.filter(source => source.comingSoon).map((source) => (
-                        <div
-                          key={source.id}
-                          className="relative p-3 rounded-lg border-2 border-[#6e1d27]/20 bg-white/30 hand-drawn-border opacity-60"
-                          title="Coming Soon"
-                        >
-                          <div className="flex items-center space-x-2 mb-2">
-                            <source.icon className="w-5 h-5" style={{ color: source.color }} />
-                            <span className="font-semibold text-[#3d0e15] font-ibm-plex text-sm">
-                              {source.name}
-                            </span>
-                          </div>
-                          <div className="absolute top-2 right-2 bg-[#6e1d27] text-white text-xs px-2 py-1 rounded-full">
-                            Soon
-                          </div>
-                          <p className="text-xs text-[#6e1d27] font-ibm-plex">
-                            {source.description}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="flex justify-between">
-                    <Button
-                      onClick={prevStep}
-                      variant="outline"
-                      className="hand-drawn-border border-2 border-[#6e1d27] text-[#6e1d27] hover:bg-[#6e1d27] hover:text-white font-ibm-plex"
-                    >
-                      <ArrowLeft className="mr-2 h-4 w-4" />
-                      Back
-                    </Button>
-                    <Button
-                      onClick={nextStep}
-                      className="hand-drawn-button bg-[#6e1d27] hover:bg-[#912d3c] text-white font-ibm-plex"
-                    >
-                      Continue
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </div>
-                </motion.div>
-              )}
-
-              {/* Step 6: Email Trigger Question */}
-              {currentStep === 6 && (
-                <motion.div
-                  key="step6"
-                  initial={{ opacity: 0, x: 50 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -50 }}
-                  transition={{ duration: 0.4 }}
-                  className="space-y-6"
-                >
-                  <div className="text-center space-y-4">
-                    <div className="w-16 h-16 mx-auto bg-[#6e1d27]/10 rounded-full flex items-center justify-center hand-drawn-border">
-                      <Mail className="w-8 h-8 text-[#6e1d27]" />
-                    </div>
-                    <h2 className="text-2xl font-bold text-[#3d0e15] font-ibm-plex hand-drawn-text">
-                      Email Automation
-                    </h2>
-                    <p className="text-[#6e1d27] font-ibm-plex">
-                      Would you like to set up automatic email processing? This will allow Datrix to automatically extract data from your emails.
-                    </p>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 gap-3">
-                      <button
-                        onClick={() => setWantsEmailTrigger(true)}
-                        className={`p-4 rounded-lg border-2 transition-all duration-300 font-ibm-plex hand-drawn-border ${
-                          wantsEmailTrigger === true
-                            ? 'border-[#6e1d27] bg-[#6e1d27] text-white'
-                            : 'border-[#6e1d27]/30 bg-white/50 text-[#6e1d27] hover:border-[#6e1d27] hover:bg-[#6e1d27]/10'
-                        }`}
-                      >
-                        <div className="flex items-center space-x-3">
-                          <Mail className="w-6 h-6" />
-                          <div className="text-left">
-                            <div className="font-semibold">Yes, set up email automation</div>
-                            <div className="text-sm opacity-75">Automatically process emails with attachments and data</div>
-                          </div>
-                        </div>
-                      </button>
-                      
-                      <button
-                        onClick={() => setWantsEmailTrigger(false)}
-                        className={`p-4 rounded-lg border-2 transition-all duration-300 font-ibm-plex hand-drawn-border ${
-                          wantsEmailTrigger === false
-                            ? 'border-[#6e1d27] bg-[#6e1d27] text-white'
-                            : 'border-[#6e1d27]/30 bg-white/50 text-[#6e1d27] hover:border-[#6e1d27] hover:bg-[#6e1d27]/10'
-                        }`}
-                      >
-                        <div className="flex items-center space-x-3">
-                          <X className="w-6 h-6" />
-                          <div className="text-left">
-                            <div className="font-semibold">Skip for now</div>
-                            <div className="text-sm opacity-75">I'll set this up later</div>
-                          </div>
-                        </div>
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="flex justify-between">
-                    <Button
-                      onClick={prevStep}
-                      variant="outline"
-                      className="hand-drawn-border border-2 border-[#6e1d27] text-[#6e1d27] hover:bg-[#6e1d27] hover:text-white font-ibm-plex"
-                    >
-                      <ArrowLeft className="mr-2 h-4 w-4" />
-                      Back
-                    </Button>
-                    <Button
-                      onClick={nextStep}
-                      disabled={wantsEmailTrigger === null}
-                      className="hand-drawn-button bg-[#6e1d27] hover:bg-[#912d3c] text-white font-ibm-plex disabled:opacity-50"
-                    >
-                      Continue
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </div>
-                </motion.div>
-              )}
-
-              {/* Step 7: Email Setup or Summary */}
-              {currentStep === 7 && (
-                <motion.div
-                  key="step7"
-                  initial={{ opacity: 0, x: 50 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -50 }}
-                  transition={{ duration: 0.4 }}
-                  className="space-y-6"
-                >
-                  {wantsEmailTrigger ? (
-                    // Email Setup Guide
-                    <div className="space-y-6">
-                      <div className="text-center space-y-4">
-                        <div className="w-16 h-16 mx-auto bg-[#6e1d27]/10 rounded-full flex items-center justify-center hand-drawn-border">
-                          <Mail className="w-8 h-8 text-[#6e1d27]" />
-                        </div>
-                        <h2 className="text-2xl font-bold text-[#3d0e15] font-ibm-plex hand-drawn-text">
-                          Email Trigger Setup
-                        </h2>
-                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                          <div className="flex items-start space-x-2">
-                            <Info className="w-5 h-5 text-blue-600 mt-0.5" />
-                            <div className="text-sm text-blue-800 font-ibm-plex">
-                              <strong>Note:</strong> We currently support Gmail triggers only. Make sure to use the same email you signed up with on Datrix.
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {emailTriggerStep === 1 && (
-                        <div className="space-y-4">
-                          <h3 className="text-lg font-semibold text-[#3d0e15] font-ibm-plex">
-                            Step 1: Go to Google Apps Script
-                          </h3>
-                          <div className="bg-white/50 border border-[#6e1d27]/20 rounded-lg p-4">
-                            <p className="text-[#6e1d27] font-ibm-plex mb-3">
-                              1. Open Google Apps Script in a new tab
-                            </p>
-                            <Button
-                              onClick={() => window.open('https://script.google.com/', '_blank')}
-                              className="hand-drawn-button bg-[#6e1d27] hover:bg-[#912d3c] text-white font-ibm-plex"
-                            >
-                              <ExternalLink className="mr-2 h-4 w-4" />
-                              Open Google Apps Script
-                            </Button>
-                          </div>
-                          <Button
-                            onClick={() => setEmailTriggerStep(2)}
-                            className="w-full hand-drawn-button bg-[#6e1d27] hover:bg-[#912d3c] text-white font-ibm-plex"
-                          >
-                            Next: Login & Create Script
-                            <ArrowRight className="ml-2 h-4 w-4" />
-                          </Button>
-                        </div>
-                      )}
-
-                      {emailTriggerStep === 2 && (
-                        <div className="space-y-4">
-                          <h3 className="text-lg font-semibold text-[#3d0e15] font-ibm-plex">
-                            Step 2: Login & Create New Script
-                          </h3>
-                          <div className="bg-white/50 border border-[#6e1d27]/20 rounded-lg p-4 space-y-3">
-                            <p className="text-[#6e1d27] font-ibm-plex">
-                              1. Login with your Gmail account ({user?.email})
-                            </p>
-                            <p className="text-[#6e1d27] font-ibm-plex">
-                              2. Click "New Project" to create a new script
-                            </p>
-                            <p className="text-[#6e1d27] font-ibm-plex">
-                              3. You'll see a code editor with a default function
-                            </p>
-                          </div>
-                          <Button
-                            onClick={() => setEmailTriggerStep(3)}
-                            className="w-full hand-drawn-button bg-[#6e1d27] hover:bg-[#912d3c] text-white font-ibm-plex"
-                          >
-                            Next: Paste Script
-                            <ArrowRight className="ml-2 h-4 w-4" />
-                          </Button>
-                        </div>
-                      )}
-
-                      {emailTriggerStep === 3 && (
-                        <div className="space-y-4">
-                          <h3 className="text-lg font-semibold text-[#3d0e15] font-ibm-plex">
-                            Step 3: Paste the Script
-                          </h3>
-                          <div className="bg-white/50 border border-[#6e1d27]/20 rounded-lg p-4 space-y-3">
-                            <p className="text-[#6e1d27] font-ibm-plex">
-                              1. Select all the default code and delete it
-                            </p>
-                            <p className="text-[#6e1d27] font-ibm-plex">
-                              2. Copy and paste this script:
-                            </p>
-                            <div className="relative">
-                              <pre className="bg-gray-100 p-3 rounded text-xs overflow-x-auto max-h-40 border">
-                                <code>{GOOGLE_APPS_SCRIPT.substring(0, 200)}...</code>
-                              </pre>
-                              <Button
-                                onClick={copyScript}
-                                className="absolute top-2 right-2 hand-drawn-button bg-[#6e1d27] hover:bg-[#912d3c] text-white font-ibm-plex text-xs px-2 py-1"
-                              >
-                                {scriptCopied ? <CheckCircle className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                                {scriptCopied ? 'Copied!' : 'Copy'}
-                              </Button>
-                            </div>
-                          </div>
-                          <Button
-                            onClick={() => setEmailTriggerStep(4)}
-                            className="w-full hand-drawn-button bg-[#6e1d27] hover:bg-[#912d3c] text-white font-ibm-plex"
-                          >
-                            Next: Set Up Trigger
-                            <ArrowRight className="ml-2 h-4 w-4" />
-                          </Button>
-                        </div>
-                      )}
-
-                      {emailTriggerStep === 4 && (
-                        <div className="space-y-4">
-                          <h3 className="text-lg font-semibold text-[#3d0e15] font-ibm-plex">
-                            Step 4: Create Trigger
-                          </h3>
-                          <div className="bg-white/50 border border-[#6e1d27]/20 rounded-lg p-4 space-y-3">
-                            <p className="text-[#6e1d27] font-ibm-plex">
-                              1. Click on the "Triggers" tab (clock icon) in the left sidebar
-                            </p>
-                            <p className="text-[#6e1d27] font-ibm-plex">
-                              2. Click "Add Trigger" and set these values:
-                            </p>
-                            <ul className="list-disc list-inside text-[#6e1d27] font-ibm-plex text-sm space-y-1 ml-4">
-                              <li>Choose function to run: <strong>main</strong></li>
-                              <li>Choose deployment: <strong>head</strong></li>
-                              <li>Select event source: <strong>time-driven</strong></li>
-                              <li>Select type: <strong>Minutes timer</strong></li>
-                              <li>Select interval: <strong>Every 5 minutes</strong> (or your preference)</li>
-                            </ul>
-                            <p className="text-[#6e1d27] font-ibm-plex">
-                              3. Click "Save" and authorize the script when prompted
-                            </p>
-                          </div>
-                          <Button
-                            onClick={() => setEmailTriggerStep(5)}
-                            className="w-full hand-drawn-button bg-[#6e1d27] hover:bg-[#912d3c] text-white font-ibm-plex"
-                          >
-                            Next: Test Trigger
-                            <ArrowRight className="ml-2 h-4 w-4" />
-                          </Button>
-                        </div>
-                      )}
-
-                      {emailTriggerStep === 5 && (
-                        <div className="space-y-4">
-                          <h3 className="text-lg font-semibold text-[#3d0e15] font-ibm-plex">
-                            Step 5: Test Your Trigger
-                          </h3>
-                          <div className="bg-white/50 border border-[#6e1d27]/20 rounded-lg p-4 space-y-3">
-                            <p className="text-[#6e1d27] font-ibm-plex">
-                              Test your email trigger to make sure everything is working correctly.
-                            </p>
-                            <Button
-                              onClick={testTrigger}
-                              disabled={triggerTested}
-                              className={`w-full font-ibm-plex ${
-                                triggerTested
-                                  ? 'bg-green-500 text-white cursor-default'
-                                  : 'hand-drawn-button bg-[#6e1d27] hover:bg-[#912d3c] text-white'
-                              }`}
-                            >
-                              {triggerTested ? (
-                                <>
-                                  <CheckCircle className="mr-2 h-4 w-4" />
-                                  Trigger Tested Successfully!
-                                </>
-                              ) : (
-                                <>
-                                  <Play className="mr-2 h-4 w-4" />
-                                  Test Trigger
-                                </>
-                              )}
-                            </Button>
-                          </div>
-                          <Button
-                            onClick={finishOnboarding}
-                            className="w-full hand-drawn-button bg-[#6e1d27] hover:bg-[#912d3c] text-white font-ibm-plex"
-                          >
-                            Complete Setup
-                            <CheckCircle className="ml-2 h-4 w-4" />
-                          </Button>
-                        </div>
-                      )}
-
-                      <div className="flex justify-between">
-                        <Button
-                          onClick={() => {
-                            if (emailTriggerStep > 1) {
-                              setEmailTriggerStep(emailTriggerStep - 1);
-                            } else {
-                              prevStep();
-                            }
-                          }}
-                          variant="outline"
-                          className="hand-drawn-border border-2 border-[#6e1d27] text-[#6e1d27] hover:bg-[#6e1d27] hover:text-white font-ibm-plex"
-                        >
-                          <ArrowLeft className="mr-2 h-4 w-4" />
-                          Back
-                        </Button>
-                        {emailTriggerStep < 5 && (
-                          <Button
-                            onClick={() => finishOnboarding()}
-                            variant="outline"
-                            className="hand-drawn-border border-2 border-[#6e1d27] text-[#6e1d27] hover:bg-[#6e1d27] hover:text-white font-ibm-plex"
-                          >
-                            Skip Email Setup
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  ) : (
-                    // Summary & Finish (No Email Setup)
-                    <div className="space-y-6">
-                      <div className="text-center space-y-4">
-                        <motion.div
-                          initial={{ scale: 0.8 }}
-                          animate={{ scale: 1 }}
-                          transition={{ delay: 0.2, duration: 0.5 }}
-                          className="w-20 h-20 mx-auto bg-[#6e1d27]/10 rounded-full flex items-center justify-center hand-drawn-border"
-                        >
-                          <CheckCircle className="w-10 h-10 text-[#6e1d27]" />
-                        </motion.div>
-                        <h2 className="text-2xl font-bold text-[#3d0e15] font-ibm-plex hand-drawn-text">
-                          You're All Set!
-                        </h2>
-                        <p className="text-[#6e1d27] font-ibm-plex">
-                          Here's what we've set up for you:
-                        </p>
-                      </div>
-                      
-                      <div className="space-y-4 bg-white/50 p-6 rounded-lg hand-drawn-border border-2 border-[#6e1d27]/30">
-                        <div className="flex items-center space-x-3">
-                          <Building2 className="w-5 h-5 text-[#6e1d27]" />
-                          <span className="font-semibold text-[#3d0e15] font-ibm-plex">Company:</span>
-                          <span className="text-[#6e1d27] font-ibm-plex">{formData.companyName}</span>
-                        </div>
-                        <div className="flex items-center space-x-3">
-                          <User className="w-5 h-5 text-[#6e1d27]" />
-                          <span className="font-semibold text-[#3d0e15] font-ibm-plex">Role:</span>
-                          <span className="text-[#6e1d27] font-ibm-plex">{formData.role}</span>
-                        </div>
-                        <div className="flex items-center space-x-3">
-                          <Database className="w-5 h-5 text-[#6e1d27]" />
-                          <span className="font-semibold text-[#3d0e15] font-ibm-plex">Airtable:</span>
-                          <span className="text-[#6e1d27] font-ibm-plex">{airtableConnected ? 'Connected' : 'Not connected'}</span>
-                        </div>
-                        <div className="flex items-center space-x-3">
-                          <Mail className="w-5 h-5 text-[#6e1d27]" />
-                          <span className="font-semibold text-[#3d0e15] font-ibm-plex">Email Automation:</span>
-                          <span className="text-[#6e1d27] font-ibm-plex">Skipped</span>
-                        </div>
-                      </div>
-
-                      <div className="flex justify-between">
-                        <Button
-                          onClick={prevStep}
-                          variant="outline"
-                          className="hand-drawn-border border-2 border-[#6e1d27] text-[#6e1d27] hover:bg-[#6e1d27] hover:text-white font-ibm-plex"
-                        >
-                          <ArrowLeft className="mr-2 h-4 w-4" />
-                          Back
-                        </Button>
-                        <Button
-                          onClick={finishOnboarding}
-                          className="hand-drawn-button bg-[#6e1d27] hover:bg-[#912d3c] text-white px-8 py-3 text-lg font-semibold font-ibm-plex"
-                        >
-                          Go to Dashboard
-                          <BarChart3 className="ml-2 h-5 w-5" />
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </motion.div>
-              )}
-            </AnimatePresence>
-
+          {/* Main Card */}
+          <motion.div
+            key={currentStep}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+            className="hand-drawn-container bg-white/60 backdrop-blur-sm p-8 relative"
+          >
             {/* Decorative corner doodles */}
             <div className="absolute top-2 left-2 w-4 h-4 opacity-30">
               <svg viewBox="0 0 24 24" className="w-full h-full text-[#6e1d27]">
@@ -1342,8 +1168,50 @@ export default function OnboardingPage() {
                 <circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" strokeWidth="1.5" className="hand-drawn-path" />
               </svg>
             </div>
-          </div>
-        </motion.div>
+
+            {/* Step Content */}
+            {renderStep()}
+
+            {/* Navigation Buttons */}
+            {currentStep !== 6 && currentStep !== 7 && (
+              <div className="flex justify-between mt-8">
+                <Button
+                  onClick={handleBack}
+                  disabled={currentStep === 1}
+                  variant="outline"
+                  className="hand-drawn-border border-2 border-[#6e1d27] text-[#6e1d27] hover:bg-[#6e1d27] hover:text-white font-ibm-plex disabled:opacity-50"
+                >
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Back
+                </Button>
+                <Button
+                  onClick={handleNext}
+                  disabled={
+                    (currentStep === 1 && !userProfile.name.trim()) ||
+                    (currentStep === 2 && !userProfile.role.trim()) ||
+                    currentStep === totalSteps
+                  }
+                  className="hand-drawn-button bg-[#6e1d27] hover:bg-[#912d3c] text-white font-ibm-plex disabled:opacity-50"
+                >
+                  {currentStep === 4 ? 'Continue' : 'Next'}
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </div>
+            )}
+
+            {/* Bottom decorative doodles */}
+            <div className="absolute bottom-2 left-2 w-6 h-3 opacity-20">
+              <svg viewBox="0 0 32 16" className="w-full h-full text-[#6e1d27]">
+                <path d="M2 8 Q8 2 16 8 T30 8" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="hand-drawn-path" />
+              </svg>
+            </div>
+            <div className="absolute bottom-2 right-2 w-4 h-4 opacity-20">
+              <svg viewBox="0 0 24 24" className="w-full h-full text-[#6e1d27]">
+                <path d="M12 2 L22 12 L12 22 L2 12 Z" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="hand-drawn-path" />
+              </svg>
+            </div>
+          </motion.div>
+        </div>
       </div>
 
       {/* Airtable Connection Modal */}
@@ -1353,41 +1221,67 @@ export default function OnboardingPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
             onClick={() => setSelectedModal(null)}
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-lg p-6 max-w-md w-full hand-drawn-container"
-              onClick={e => e.stopPropagation()}
+              className="hand-drawn-container bg-white p-6 rounded-lg max-w-md w-full shadow-xl"
+              onClick={(e) => e.stopPropagation()}
             >
-              <div className="space-y-4">
+              <div className="space-y-6">
                 <div className="flex items-center space-x-3 mb-4">
-                  <Database className="w-8 h-8" style={{ color: '#ffb700' }} />
+                  <Database className="w-8 h-8 text-[#ffb700]" />
                   <h3 className="text-xl font-bold text-[#3d0e15] font-ibm-plex">
                     Connect Airtable
                   </h3>
                 </div>
-                
-                <p className="text-[#6e1d27] font-ibm-plex">
-                  Enter your Airtable Access Token to connect your bases.
-                </p>
 
-                <div className="space-y-3">
-                  <Input
-                    value={modalInputs.apiKey || ''}
-                    onChange={e => setModalInputs(inputs => ({ ...inputs, apiKey: e.target.value }))}
-                    placeholder="Access Token"
-                    className="hand-drawn-input bg-white border-2 border-[#6e1d27] font-ibm-plex"
-                  />
-                  <Input
-                    value={modalInputs.baseId || ''}
-                    onChange={e => setModalInputs(inputs => ({ ...inputs, baseId: e.target.value }))}
-                    placeholder="Base ID (optional)"
-                    className="hand-drawn-input bg-white border-2 border-[#6e1d27] font-ibm-plex"
-                  />
+                <div className="space-y-4">
+                  <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded">
+                    <div className="flex items-start space-x-2">
+                      <AlertCircle className="w-5 h-5 text-blue-500 mt-0.5" />
+                      <div className="text-sm text-blue-700 font-ibm-plex">
+                        <p className="font-semibold mb-1">Important:</p>
+                        <p>Make sure your Airtable access token has <strong>read and write permissions</strong> for the bases you want to use with Datrix.</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="airtable-token" className="text-[#3d0e15] font-ibm-plex font-medium">
+                      Airtable Access Token
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="airtable-token"
+                        type={showToken ? "text" : "password"}
+                        value={airtableToken}
+                        onChange={(e) => setAirtableToken(e.target.value)}
+                        placeholder="Enter your Airtable access token"
+                        className="hand-drawn-input bg-white border-2 border-[#6e1d27] font-ibm-plex pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowToken(!showToken)}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#6e1d27] hover:text-[#3d0e15]"
+                      >
+                        {showToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="text-sm text-[#6e1d27] font-ibm-plex">
+                    <p className="mb-2">To get your access token:</p>
+                    <ol className="list-decimal list-inside space-y-1 ml-2">
+                      <li>Go to <a href="https://airtable.com/account" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">airtable.com/account</a></li>
+                      <li>Navigate to the "API" section</li>
+                      <li>Generate a new personal access token</li>
+                      <li>Ensure it has read and write permissions</li>
+                    </ol>
+                  </div>
                 </div>
 
                 <div className="flex space-x-3 pt-4">
@@ -1399,8 +1293,9 @@ export default function OnboardingPage() {
                     Cancel
                   </Button>
                   <Button
-                    onClick={connectAirtable}
-                    className="flex-1 hand-drawn-button bg-[#6e1d27] hover:bg-[#912d3c] text-white font-ibm-plex"
+                    onClick={handleConnectAirtable}
+                    disabled={!airtableToken.trim()}
+                    className="flex-1 hand-drawn-button bg-[#6e1d27] hover:bg-[#912d3c] text-white font-ibm-plex disabled:opacity-50"
                   >
                     Connect
                   </Button>
