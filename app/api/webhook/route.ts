@@ -307,6 +307,45 @@ export async function POST(request: NextRequest) {
       })
     };
 
+    // Log the automation run to database
+    if (isGoogleAppsScriptData) {
+      if (integrationResult) {
+        // Log successful or failed automation run
+        await logAutomationRun({
+          dataType: aiAnalysis?.category || 'Email Data',
+          source: 'Email',
+          destination: integrationResult.selectedIntegration || 'Unknown',
+          status: integrationResult.error ? 'Failed' : 'Processed',
+          userId: userId,
+          details: {
+            emailSubject: aiAnalysis?.subject || 'Unknown',
+            aiCategory: aiAnalysis?.category,
+            aiPriority: aiAnalysis?.priority,
+            integrationResult: integrationResult,
+            emailsProcessed: body.data.emailsProcessed
+          }
+        });
+      } else if (aiAnalysis) {
+        // Log AI decision (processed or skipped)
+        await logAutomationRun({
+          dataType: aiAnalysis.category || 'Email Data',
+          source: 'Email',
+          destination: aiAnalysis.shouldProcess ? 'Airtable' : 'Skipped',
+          status: aiAnalysis.shouldProcess ? 'Processed' : 'Skip',
+          userId: userId,
+          details: {
+            emailSubject: aiAnalysis.subject || 'Unknown',
+            aiCategory: aiAnalysis.category,
+            aiPriority: aiAnalysis.priority,
+            aiReasoning: aiAnalysis.reasoning,
+            shouldProcess: aiAnalysis.shouldProcess,
+            emailsProcessed: body.data.emailsProcessed,
+            processingType: aiAnalysis.shouldProcess ? 'processed_by_ai' : 'skipped_by_ai'
+          }
+        });
+      }
+    }
+
     return NextResponse.json(response, { status: 200 });
 
   } catch (error) {
@@ -638,5 +677,49 @@ export const getUserIdByEmail = async (email: string) => {
   } catch (error) {
     console.error('Error in getUserIdByEmail:', error)
     return null
+  }
+}
+
+// Helper function to log automation run to database
+async function logAutomationRun(data: {
+  dataType: string;
+  source: string;
+  destination: string;
+  status: 'Success' | 'Failed' | 'Processed' | 'Skip';
+  userId?: string;
+  details?: any;
+}) {
+  try {
+    const { data: runData, error } = await supabase
+      .from('runs')
+      .insert({
+        user_id: data.userId || null,
+        run_time: new Date().toISOString(),
+        data_type: data.dataType,
+        source: data.source,
+        destination: data.destination,
+        status: data.status
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('❌ Failed to log automation run to database:', error);
+      return null;
+    }
+
+    console.log('✅ Automation run logged to database:', {
+      id: runData.id,
+      dataType: data.dataType,
+      source: data.source,
+      destination: data.destination,
+      status: data.status,
+      userId: data.userId
+    });
+
+    return runData;
+  } catch (error) {
+    console.error('❌ Error logging automation run to database:', error);
+    return null;
   }
 }
