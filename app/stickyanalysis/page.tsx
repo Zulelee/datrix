@@ -15,7 +15,9 @@ import {
   Sparkles,
   ZoomIn,
   ZoomOut,
-  RotateCcw
+  RotateCcw,
+  AlertCircle,
+  X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
@@ -69,6 +71,7 @@ function StickyAnalysisFlow() {
   const [analysisDescription, setAnalysisDescription] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<string>('');
+  const [analysisError, setAnalysisError] = useState<string>('');
   const { fitView, zoomIn, zoomOut } = useReactFlow();
   const router = useRouter();
   const [analysisId, setAnalysisId] = useState<string | null>(null);
@@ -173,6 +176,7 @@ function StickyAnalysisFlow() {
     try {
       setIsAnalyzing(true);
       setAnalysisResult('');
+      setAnalysisError(''); // Clear any previous errors
       
       // Step 1: Get streaming analysis
       const response = await fetch('/api/analyze', {
@@ -193,13 +197,13 @@ function StickyAnalysisFlow() {
       });
       
       if (!response.ok) {
-        throw new Error(`Analysis request failed: ${response.status}`);
+        throw new Error(`Analysis request failed: ${response.status} ${response.statusText}`);
       }
       
       // Handle streaming response
       const reader = response.body?.getReader();
       if (!reader) {
-        throw new Error('No response body');
+        throw new Error('No response body available');
       }
 
       let fullText = '';
@@ -211,8 +215,11 @@ function StickyAnalysisFlow() {
         // Convert the chunk to text
         const chunk = new TextDecoder().decode(value);
         fullText += chunk;
+      }
 
-        // Don't update UI with streaming text anymore
+      // Check if we got any meaningful response
+      if (!fullText || fullText.trim().length === 0) {
+        throw new Error('No analysis data received from the server');
       }
 
       // Step 2: Format the analysis into proper JSON
@@ -227,26 +234,36 @@ function StickyAnalysisFlow() {
       });
 
       if (!formatResponse.ok) {
-        throw new Error(`Formatting request failed: ${formatResponse.status}`);
+        throw new Error(`Formatting request failed: ${formatResponse.status} ${formatResponse.statusText}`);
       }
 
       const formattedData = await formatResponse.json();
+      
+      // Check if formatting was successful
+      if (!formattedData || formattedData.error) {
+        throw new Error(formattedData?.message || 'Failed to format analysis results');
+      }
+
       console.log('Formatted analysis:', formattedData);
 
       // Set the final explanation text
-      setAnalysisResult(formattedData.explanation || 'Analysis completed');
+      setAnalysisResult(formattedData.explanation || 'Analysis completed successfully');
 
-      // Add chart components to the board
+      // Add chart components to the board (APPEND to existing nodes)
       if (formattedData.components && Array.isArray(formattedData.components)) {
         const analysisType = analysisTypes.find(type => type.id === selectedAnalysisType);
         
-        const newNodes = formattedData.components.map((component) => {
+        const newNodes = formattedData.components.map((component, index) => {
+          // Calculate position to avoid overlap with existing nodes
+          const baseX = 150 + (index % 3) * 300; // Spread horizontally
+          const baseY = 150 + Math.floor(index / 3) * 250; // Stack vertically
+          
           return {
             id: component.id || `ai-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
             type: 'chartNode',
             position: component.position || { 
-              x: Math.random() * 800 + 100, 
-              y: Math.random() * 400 + 100 
+              x: baseX + Math.random() * 100 - 50, // Add some randomness
+              y: baseY + Math.random() * 100 - 50
             },
             data: {
               title: component.data.title,
@@ -259,12 +276,38 @@ function StickyAnalysisFlow() {
           };
         });
         
-        setNodes((nds) => [...nds, ...newNodes]);
+        // APPEND new nodes to existing ones instead of replacing
+        setNodes((existingNodes) => [...existingNodes, ...newNodes]);
+        
+        console.log(`✅ Successfully added ${newNodes.length} new chart(s) to the board`);
+      } else {
+        console.warn('⚠️ No chart components found in analysis results');
+        // Still show success message even if no charts were generated
+        setAnalysisResult(formattedData.explanation || 'Analysis completed, but no charts were generated');
       }
       
     } catch (error) {
-      console.error('Error running AI analysis:', error);
-      setAnalysisResult('Error running analysis. Please try again.');
+      console.error('❌ Error running AI analysis:', error);
+      
+      // Set user-friendly error message
+      let errorMessage = 'Failed to run analysis. Please try again.';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('fetch')) {
+          errorMessage = 'Network error. Please check your connection and try again.';
+        } else if (error.message.includes('401') || error.message.includes('403')) {
+          errorMessage = 'Authentication error. Please refresh the page and try again.';
+        } else if (error.message.includes('500')) {
+          errorMessage = 'Server error. Please try again in a few moments.';
+        } else if (error.message.includes('timeout')) {
+          errorMessage = 'Request timed out. Please try with a simpler analysis.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      setAnalysisError(errorMessage);
+      setAnalysisResult(''); // Clear any previous success message
     } finally {
       setIsAnalyzing(false);
       setShowAddModal(false);
@@ -288,6 +331,10 @@ function StickyAnalysisFlow() {
 
   const handleZoomOut = () => {
     zoomOut({ duration: 200 });
+  };
+
+  const clearError = () => {
+    setAnalysisError('');
   };
 
   // Persist analysis whenever nodes or edges change (debounced)
@@ -345,6 +392,66 @@ function StickyAnalysisFlow() {
 
       {/* Navbar */}
       <OnboardingNavbar onLogout={logout} />
+
+      {/* Error Toast */}
+      <AnimatePresence>
+        {analysisError && (
+          <motion.div
+            initial={{ opacity: 0, y: -100 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -100 }}
+            className="fixed top-24 left-1/2 transform -translate-x-1/2 z-50 max-w-md w-full mx-4"
+          >
+            <div className="hand-drawn-container bg-red-50 border-2 border-red-500 p-4 rounded-lg shadow-lg">
+              <div className="flex items-start space-x-3">
+                <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <h3 className="font-semibold text-red-800 font-ibm-plex">Analysis Failed</h3>
+                  <p className="text-sm text-red-700 font-ibm-plex mt-1">{analysisError}</p>
+                </div>
+                <Button
+                  onClick={clearError}
+                  variant="ghost"
+                  size="sm"
+                  className="text-red-500 hover:text-red-700 hover:bg-red-100 p-1"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Success Toast */}
+      <AnimatePresence>
+        {analysisResult && !analysisError && (
+          <motion.div
+            initial={{ opacity: 0, y: -100 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -100 }}
+            className="fixed top-24 left-1/2 transform -translate-x-1/2 z-50 max-w-md w-full mx-4"
+          >
+            <div className="hand-drawn-container bg-green-50 border-2 border-green-500 p-4 rounded-lg shadow-lg">
+              <div className="flex items-start space-x-3">
+                <Sparkles className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <h3 className="font-semibold text-green-800 font-ibm-plex">Analysis Complete!</h3>
+                  <p className="text-sm text-green-700 font-ibm-plex mt-1">{analysisResult}</p>
+                </div>
+                <Button
+                  onClick={() => setAnalysisResult('')}
+                  variant="ghost"
+                  size="sm"
+                  className="text-green-500 hover:text-green-700 hover:bg-green-100 p-1"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Main Content - Fixed height layout */}
       <div className="relative z-10 pt-20 px-4 sm:px-6 lg:px-8 pb-4" style={{ height: '100vh' }}>
@@ -626,6 +733,7 @@ function StickyAnalysisFlow() {
                   variant="outline"
                   className="font-ibm-plex border-2 border-[#6e1d27]/30"
                   onClick={() => setShowAddModal(false)}
+                  disabled={isAnalyzing}
                 >
                   Cancel
                 </Button>
