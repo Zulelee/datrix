@@ -46,12 +46,12 @@ const nodeTypes = {
 };
 
 const analysisTypes = [
-  { id: 'sales-reporting', name: 'Sales Reporting', icon: DollarSign, color: '#10b981' },
-  { id: 'financial-summaries', name: 'Financial Summaries', icon: BarChart3, color: '#3b82f6' },
-  { id: 'sales-forecasting', name: 'Sales Forecasting', icon: TrendingUp, color: '#8b5cf6' },
-  { id: 'cluster-analysis', name: 'Customer Segments', icon: Users, color: '#f59e0b' },
-  { id: 'product-performance', name: 'Product Performance', icon: Target, color: '#ef4444' },
-  { id: 'time-analysis', name: 'Time Analysis', icon: Calendar, color: '#06b6d4' }
+  { id: 'sales-reporting', name: 'Sales Reporting', icon: DollarSign, color: '#10b981', available: true },
+  { id: 'financial-summaries', name: 'Financial Summaries', icon: BarChart3, color: '#3b82f6', available: false },
+  { id: 'sales-forecasting', name: 'Sales Forecasting', icon: TrendingUp, color: '#8b5cf6', available: false },
+  { id: 'cluster-analysis', name: 'Customer Segments', icon: Users, color: '#f59e0b', available: false },
+  { id: 'product-performance', name: 'Product Performance', icon: Target, color: '#ef4444', available: false },
+  { id: 'time-analysis', name: 'Time Analysis', icon: Calendar, color: '#06b6d4', available: false }
 ];
 
 const initialNodes: Node[] = [
@@ -644,26 +644,35 @@ function StickyAnalysisFlow() {
                 <Label className="font-ibm-plex mb-2 block">Select Analysis Type</Label>
                 <div className="grid grid-cols-2 gap-3">
                   {analysisTypes.map((type) => (
-                    <Button
-                      key={type.id}
-                      variant={selectedAnalysisType === type.id ? "default" : "outline"}
-                      className={`flex items-center justify-start gap-2 h-auto py-3 px-4 border-2`}
-                      style={{
-                        backgroundColor: selectedAnalysisType === type.id ? '#6e1d27' : 'white',
-                        color: selectedAnalysisType === type.id ? '#f0dcc4' : '#3d0e15',
-                        borderColor: selectedAnalysisType === type.id ? '#6e1d27' : '#6e1d27',
-                        borderWidth: '2px'
-                      }}
-                      onClick={() => setSelectedAnalysisType(type.id)}
-                    >
-                      <type.icon 
-                        className="w-5 h-5" 
-                        style={{ 
-                          color: selectedAnalysisType === type.id ? '#f0dcc4' : type.color 
+                    <div key={type.id} className="relative">
+                      <Button
+                        variant={selectedAnalysisType === type.id ? "default" : "outline"}
+                        className={`flex items-center justify-start gap-2 h-auto py-3 px-4 border-2 w-full relative ${
+                          !type.available ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
+                        style={{
+                          backgroundColor: selectedAnalysisType === type.id && type.available ? '#6e1d27' : 'white',
+                          color: selectedAnalysisType === type.id && type.available ? '#f0dcc4' : '#3d0e15',
+                          borderColor: selectedAnalysisType === type.id && type.available ? '#6e1d27' : '#6e1d27',
+                          borderWidth: '2px'
                         }}
-                      />
-                      <span>{type.name}</span>
-                    </Button>
+                        onClick={() => type.available && setSelectedAnalysisType(type.id)}
+                        disabled={!type.available}
+                      >
+                        <type.icon 
+                          className="w-5 h-5" 
+                          style={{ 
+                            color: selectedAnalysisType === type.id && type.available ? '#f0dcc4' : type.color 
+                          }}
+                        />
+                        <span>{type.name}</span>
+                        {!type.available && (
+                          <div className="absolute top-1 right-1 bg-[#6e1d27] text-white text-xs px-2 py-1 rounded-full">
+                            Coming Soon
+                          </div>
+                        )}
+                      </Button>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -678,6 +687,7 @@ function StickyAnalysisFlow() {
                   placeholder="Describe what you'd like to analyze..."
                   value={analysisDescription}
                   onChange={(e) => setAnalysisDescription(e.target.value)}
+                  disabled={isAnalyzing}
                 />
               </div>
               
@@ -740,7 +750,7 @@ function StickyAnalysisFlow() {
                 <Button
                   className="font-ibm-plex bg-[#6e1d27] hover:bg-[#3d0e15]"
                   onClick={handleRunAIAnalysis}
-                  disabled={!selectedAnalysisType || !analysisDescription.trim() || isAnalyzing}
+                  disabled={!selectedAnalysisType || !analysisDescription.trim() || isAnalyzing || !analysisTypes.find(t => t.id === selectedAnalysisType)?.available}
                 >
                   {isAnalyzing ? (
                     <>
