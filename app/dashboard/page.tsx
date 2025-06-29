@@ -32,13 +32,12 @@ import { OnboardingNavbar } from '@/components/Navbar';
 
 interface DataRun {
   id: string;
-  created_at: string;
-  data_type: string;
-  source: 'Email' | 'Datrix AI';
-  destination: string;
-  status: 'Success' | 'Failed' | 'In Progress';
   user_id: string;
-  metadata?: any;
+  run_time: string;
+  data_type: string;
+  source: string;
+  destination: string;
+  status: string;
 }
 
 const getDestinationIcon = (destination: string) => {
@@ -95,7 +94,7 @@ export default function DashboardPage() {
         .from('runs')
         .select('*')
         .eq('user_id', userId)
-        .order('created_at', { ascending: false })
+        .order('run_time', { ascending: false })
         .limit(50); // Limit to last 50 runs
 
       if (error) {
@@ -305,8 +304,8 @@ export default function DashboardPage() {
                             >
                               <td className="py-3 px-4 text-[#6e1d27] font-ibm-plex">
                                 <div>
-                                  <div className="font-medium">{formatDate(run.created_at)}</div>
-                                  <div className="text-sm opacity-75">{formatTime(run.created_at)}</div>
+                                  <div className="font-medium">{formatDate(run.run_time)}</div>
+                                  <div className="text-sm opacity-75">{formatTime(run.run_time)}</div>
                                 </div>
                               </td>
                               <td className="py-3 px-4 text-[#6e1d27] font-ibm-plex font-medium">
