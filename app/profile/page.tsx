@@ -485,7 +485,7 @@ export default function ProfilePage() {
                             className="hand-drawn-input bg-white/80 border-2 border-[#6e1d27] text-[#3d0e15] font-ibm-plex"
                           />
                         </div>
-                        <div>
+                        {/* <div>
                           <Label htmlFor="email" className="text-[#3d0e15] font-ibm-plex font-medium hand-drawn-text">
                             Email Address
                           </Label>
@@ -497,7 +497,7 @@ export default function ProfilePage() {
                             className="hand-drawn-input bg-gray-100 border-2 border-[#6e1d27]/30 text-[#3d0e15] font-ibm-plex opacity-60"
                           />
                           <p className="text-xs text-[#6e1d27]/60 mt-1">Email cannot be changed</p>
-                        </div>
+                        </div> */}
                         <div>
                           <Label htmlFor="role" className="text-[#3d0e15] font-ibm-plex font-medium hand-drawn-text">
                             Role/Title
@@ -506,7 +506,7 @@ export default function ProfilePage() {
                             <button
                               type="button"
                               onClick={() => setShowRoleDropdown(!showRoleDropdown)}
-                              className="hand-drawn-input bg-white/80 border-2 border-[#6e1d27] text-[#3d0e15] font-ibm-plex w-full text-left flex items-center justify-between"
+                              className="hand-drawn-input bg-white/80 border-2 border-[#6e1d27] text-[#3d0e15] font-ibm-plex w-full text-left flex items-center justify-between px-3 py-2 h-10"
                             >
                               <span>{profileData.role || 'Select your role'}</span>
                               <motion.div
@@ -558,18 +558,18 @@ export default function ProfilePage() {
                             className="hand-drawn-input bg-white/80 border-2 border-[#6e1d27] text-[#3d0e15] font-ibm-plex"
                           />
                         </div>
-                      </div>
-                      <div>
-                        <Label htmlFor="goal" className="text-[#3d0e15] font-ibm-plex font-medium hand-drawn-text">
-                          Main Goal with Datrix
-                        </Label>
-                        <Input
-                          id="goal"
-                          value={profileData.goal}
-                          onChange={(e) => setProfileData({...profileData, goal: e.target.value})}
-                          className="hand-drawn-input bg-white/80 border-2 border-[#6e1d27] text-[#3d0e15] font-ibm-plex"
-                          placeholder="What do you want to achieve with Datrix?"
-                        />
+                        <div>
+                          <Label htmlFor="goal" className="text-[#3d0e15] font-ibm-plex font-medium hand-drawn-text">
+                            Main Goal with Datrix
+                          </Label>
+                          <Input
+                            id="goal"
+                            value={profileData.goal}
+                            onChange={(e) => setProfileData({...profileData, goal: e.target.value})}
+                            className="hand-drawn-input bg-white/80 border-2 border-[#6e1d27] text-[#3d0e15] font-ibm-plex"
+                            placeholder="What do you want to achieve with Datrix?"
+                          />
+                        </div>
                       </div>
                       <div className="flex justify-end space-x-3 pt-4">
                         <Button
@@ -603,13 +603,13 @@ export default function ProfilePage() {
                           <p className="font-semibold text-[#3d0e15] font-ibm-plex">{profileData.name || 'Not specified'}</p>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-3">
+                      {/* <div className="flex items-center space-x-3">
                         <Mail className="w-5 h-5 text-[#6e1d27]" />
                         <div>
                           <p className="text-sm text-[#6e1d27] font-ibm-plex">Email Address</p>
                           <p className="font-semibold text-[#3d0e15] font-ibm-plex">{profileData.email}</p>
                         </div>
-                      </div>
+                      </div> */}
                       <div className="flex items-center space-x-3">
                         <Briefcase className="w-5 h-5 text-[#6e1d27]" />
                         <div>
@@ -625,7 +625,7 @@ export default function ProfilePage() {
                         </div>
                       </div>
                       {profileData.goal && (
-                        <div className="flex items-start space-x-3 md:col-span-2">
+                        <div className="flex items-start space-x-3">
                           <Settings className="w-5 h-5 text-[#6e1d27] mt-1" />
                           <div>
                             <p className="text-sm text-[#6e1d27] font-ibm-plex">Main Goal</p>
