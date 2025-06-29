@@ -209,7 +209,7 @@ export default function DashboardPage() {
             className="text-center mb-8"
           >
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#3d0e15] mb-4 font-ibm-plex hand-drawn-text">
-              Welcome back, {user?.user_metadata?.name || 'there'}!
+              Hello {user?.user_metadata?.name || 'there'}!
             </h1>
             <p className="text-lg sm:text-xl text-[#6e1d27] font-ibm-plex">
               Here's what's happening with your data

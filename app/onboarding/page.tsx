@@ -30,7 +30,9 @@ import {
   ExternalLink,
   Play,
   AlertCircle,
-  Info
+  Info,
+  FileSpreadsheet,
+  X
 } from 'lucide-react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
