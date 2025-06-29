@@ -75,6 +75,7 @@ function StickyAnalysisFlow() {
   const { fitView, zoomIn, zoomOut } = useReactFlow();
   const router = useRouter();
   const [analysisId, setAnalysisId] = useState<string | null>(null);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   useEffect(() => {
     setMounted(true);
@@ -101,7 +102,6 @@ function StickyAnalysisFlow() {
       return;
     }
     setUser(user);
-    setLoading(false);
 
     // After we have the user, try loading their existing analysis
     const { data: existingAnalysis, error: fetchError } = await supabase
@@ -127,6 +127,9 @@ function StickyAnalysisFlow() {
       setEdges(savedEdges);
       setAnalysisId(existingAnalysis.id);
     }
+    
+    setLoading(false);
+    setIsInitialLoad(false); // Mark initial load as complete
   };
 
   const logout = async () => {
@@ -337,9 +340,9 @@ function StickyAnalysisFlow() {
     setAnalysisError('');
   };
 
-  // Persist analysis whenever nodes or edges change (debounced)
+  // Persist analysis whenever nodes or edges change (debounced) - BUT ONLY AFTER INITIAL LOAD
   useEffect(() => {
-    if (!user) return;
+    if (!user || isInitialLoad) return; // Don't save during initial load
 
     // Use a longer debounce for brand-new boards to avoid saving every second during creation
     const debounceDelay = analysisId ? 2000 : 5000;
@@ -361,6 +364,8 @@ function StickyAnalysisFlow() {
 
       if (saveError) {
         console.error('Failed to save analysis:', saveError);
+      } else {
+        console.log('✅ Analysis saved successfully');
       }
 
       // If this was a new analysis, store its id for future updates
@@ -370,7 +375,7 @@ function StickyAnalysisFlow() {
     }, debounceDelay);
 
     return () => clearTimeout(timeout);
-  }, [nodes, edges, user, analysisId]);
+  }, [nodes, edges, user, analysisId, isInitialLoad]); // Added isInitialLoad dependency
 
   if (!mounted || loading) {
     return null;
