@@ -27,7 +27,9 @@ import {
   Shield,
   Settings,
   Eye,
-  EyeOff
+  EyeOff,
+  ChevronDown,
+  Check
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
@@ -44,6 +46,24 @@ interface Integration {
   connectedDate?: string;
   credentials?: any;
 }
+
+const roleOptions = [
+  'CEO / Founder',
+  'Sales Manager', 
+  'Sales Representative',
+  'Marketing Manager',
+  'Data Analyst',
+  'Operations Manager',
+  'Business Analyst',
+  'Product Manager',
+  'Customer Success Manager',
+  'Administrative Assistant',
+  'Finance Manager',
+  'HR Manager',
+  'IT Manager',
+  'Consultant',
+  'Other'
+];
 
 function SecretInput({ value, onChange, placeholder, className = "" }) {
   const [show, setShow] = useState(false);
@@ -71,17 +91,20 @@ function SecretInput({ value, onChange, placeholder, className = "" }) {
 export default function ProfilePage() {
   const [mounted, setMounted] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [editingProfile, setEditingProfile] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showRoleDropdown, setShowRoleDropdown] = useState(false);
   const [profileData, setProfileData] = useState({
     name: '',
     email: '',
     role: '',
-    company: ''
+    company: '',
+    goal: ''
   });
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
@@ -97,23 +120,21 @@ export default function ProfilePage() {
 
   const router = useRouter();
 
-  // Mock integrations data
+  // Integration data - only Airtable is enabled
   const [integrations, setIntegrations] = useState<Integration[]>([
     {
       id: 'airtable',
       name: 'Airtable',
       icon: Database,
       color: '#ffb700',
-      connected: true,
-      connectedDate: '2024-01-10'
+      connected: false
     },
     {
       id: 'postgres',
       name: 'PostgreSQL',
       icon: Server,
       color: '#336791',
-      connected: true,
-      connectedDate: '2024-01-12'
+      connected: false
     },
     {
       id: 'sheets',
@@ -127,8 +148,7 @@ export default function ProfilePage() {
       name: 'Notion',
       icon: FileText,
       color: '#000000',
-      connected: true,
-      connectedDate: '2024-01-15'
+      connected: false
     },
     {
       id: 'slack',
@@ -165,24 +185,65 @@ export default function ProfilePage() {
       return;
     }
     setUser(user);
-    setProfileData({
-      name: user.user_metadata?.name || '',
-      email: user.email || '',
-      role: user.user_metadata?.role || 'Not specified',
-      company: user.user_metadata?.company || 'Not specified'
-    });
+    
+    // Load user profile from database
+    await loadUserProfile(user.id);
+    
+    // Load user data sources
+    await loadUserDataSources(user.id);
+    
     setLoading(false);
-    if (user) {
-      getUserDataSources(user.id).then(({ data }) => {
+  };
+
+  const loadUserProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        console.error('Error loading user profile:', error);
+        return;
+      }
+
+      if (data) {
+        setUserProfile(data);
+        setProfileData({
+          name: data.name || '',
+          email: user?.email || '',
+          role: data.role || '',
+          company: data.company || '',
+          goal: data.goal || ''
+        });
+      }
+    } catch (error) {
+      console.error('Error loading user profile:', error);
+    }
+  };
+
+  const loadUserDataSources = async (userId: string) => {
+    try {
+      const { data, error } = await getUserDataSources(userId);
+      
+      if (error) {
+        console.error('Error loading data sources:', error);
+        return;
+      }
+
+      if (data) {
         setIntegrations(prev =>
-          prev.map(ds => {
-            const found = data?.find((row: any) => row.source_type === ds.id);
+          prev.map(integration => {
+            const found = data.find((source: any) => source.source_type === integration.id);
             return found
-              ? { ...ds, connected: true, credentials: found.credentials }
-              : { ...ds, connected: false, credentials: undefined };
+              ? { ...integration, connected: true, credentials: found.credentials, connectedDate: found.created_at }
+              : integration;
           })
         );
-      });
+      }
+    } catch (error) {
+      console.error('Error loading data sources:', error);
     }
   };
 
@@ -192,10 +253,45 @@ export default function ProfilePage() {
   };
 
   const handleProfileUpdate = async () => {
-    // Here you would update the user profile in Supabase
-    console.log('Updating profile:', profileData);
-    setEditingProfile(false);
-    // Show success message
+    if (!user?.id) return;
+
+    try {
+      const { error } = await supabase
+        .from('user_profiles')
+        .update({
+          name: profileData.name,
+          role: profileData.role,
+          company: profileData.company,
+          goal: profileData.goal
+        })
+        .eq('id', user.id);
+
+      if (error) {
+        console.error('Error updating profile:', error);
+        alert('Error updating profile. Please try again.');
+        return;
+      }
+
+      // Update user metadata in auth
+      const { error: authError } = await supabase.auth.updateUser({
+        data: {
+          name: profileData.name,
+          role: profileData.role,
+          company: profileData.company
+        }
+      });
+
+      if (authError) {
+        console.error('Error updating auth metadata:', authError);
+      }
+
+      setEditingProfile(false);
+      await loadUserProfile(user.id); // Reload profile data
+      alert('Profile updated successfully!');
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      alert('Error updating profile. Please try again.');
+    }
   };
 
   const handlePasswordChange = async () => {
@@ -203,33 +299,59 @@ export default function ProfilePage() {
       alert('New passwords do not match');
       return;
     }
-    // Here you would update the password in Supabase
-    console.log('Changing password');
-    setChangingPassword(false);
-    setPasswordData({
-      currentPassword: '',
-      newPassword: '',
-      confirmPassword: ''
-    });
-    // Show success message
+
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: passwordData.newPassword
+      });
+
+      if (error) {
+        console.error('Error updating password:', error);
+        alert('Error updating password. Please try again.');
+        return;
+      }
+
+      setChangingPassword(false);
+      setPasswordData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
+      alert('Password updated successfully!');
+    } catch (error) {
+      console.error('Error updating password:', error);
+      alert('Error updating password. Please try again.');
+    }
   };
 
   const handleDisconnectIntegration = async (integrationId: 'airtable' | 'postgres') => {
-    await deleteUserDataSource(user.id, integrationId);
-    setIntegrations(prev =>
-      prev.map(integration =>
-        integration.id === integrationId
-          ? { ...integration, connected: false, credentials: undefined }
-          : integration
-      )
-    );
+    try {
+      await deleteUserDataSource(user.id, integrationId);
+      setIntegrations(prev =>
+        prev.map(integration =>
+          integration.id === integrationId
+            ? { ...integration, connected: false, credentials: undefined }
+            : integration
+        )
+      );
+      alert('Integration disconnected successfully!');
+    } catch (error) {
+      console.error('Error disconnecting integration:', error);
+      alert('Error disconnecting integration. Please try again.');
+    }
   };
 
   const handleConnectIntegration = async (sourceId: "airtable" | "postgres", credentials: any) => {
     setLoading(true);
-    const { error } = await saveUserDataSource(user.id, sourceId, credentials);
-    setLoading(false);
-    if (!error) {
+    try {
+      const { error } = await saveUserDataSource(user.id, sourceId, credentials);
+      
+      if (error) {
+        console.error('Error connecting integration:', error);
+        alert('Error connecting integration. Please try again.');
+        return;
+      }
+
       setIntegrations(prev => 
         prev.map(integration => 
           integration.id === sourceId 
@@ -237,33 +359,32 @@ export default function ProfilePage() {
             : integration
         )
       );
-    } else {
-      // Show error to user
+      
+      setSelectedModal(null);
+      setModalInputs({});
+      alert('Integration connected successfully!');
+    } catch (error) {
+      console.error('Error connecting integration:', error);
+      alert('Error connecting integration. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleSendFeedback = () => {
+  const handleSendFeedback = async () => {
+    // Here you would implement feedback sending logic
     console.log('Sending feedback:', feedbackText);
     setFeedbackText('');
     setShowFeedbackModal(false);
-    // Show success message
+    alert('Thank you for your feedback!');
   };
 
-  const handleSendSupport = () => {
+  const handleSendSupport = async () => {
+    // Here you would implement support message sending logic
     console.log('Sending support message:', supportMessage);
     setSupportMessage('');
     setShowSupportModal(false);
-    // Show success message
-  };
-
-  const handleDeleteIntegration = async (sourceId: 'airtable' | 'postgres') => {
-    await deleteUserDataSource(user.id, sourceId);
-    // Update UI: set connected to false
-  };
-
-  const openEditModal = (sourceId, credentials) => {
-    setSelectedModal(sourceId);
-    setModalInputs(credentials);
+    alert('Support message sent! We\'ll get back to you soon.');
   };
 
   if (!mounted || loading) {
@@ -372,20 +493,59 @@ export default function ProfilePage() {
                             id="email"
                             type="email"
                             value={profileData.email}
-                            onChange={(e) => setProfileData({...profileData, email: e.target.value})}
-                            className="hand-drawn-input bg-white/80 border-2 border-[#6e1d27] text-[#3d0e15] font-ibm-plex"
+                            disabled
+                            className="hand-drawn-input bg-gray-100 border-2 border-[#6e1d27]/30 text-[#3d0e15] font-ibm-plex opacity-60"
                           />
+                          <p className="text-xs text-[#6e1d27]/60 mt-1">Email cannot be changed</p>
                         </div>
                         <div>
                           <Label htmlFor="role" className="text-[#3d0e15] font-ibm-plex font-medium hand-drawn-text">
                             Role/Title
                           </Label>
-                          <Input
-                            id="role"
-                            value={profileData.role}
-                            onChange={(e) => setProfileData({...profileData, role: e.target.value})}
-                            className="hand-drawn-input bg-white/80 border-2 border-[#6e1d27] text-[#3d0e15] font-ibm-plex"
-                          />
+                          <div className="relative">
+                            <button
+                              type="button"
+                              onClick={() => setShowRoleDropdown(!showRoleDropdown)}
+                              className="hand-drawn-input bg-white/80 border-2 border-[#6e1d27] text-[#3d0e15] font-ibm-plex w-full text-left flex items-center justify-between"
+                            >
+                              <span>{profileData.role || 'Select your role'}</span>
+                              <motion.div
+                                animate={{ rotate: showRoleDropdown ? 180 : 0 }}
+                                transition={{ duration: 0.2 }}
+                              >
+                                <ChevronDown className="h-4 w-4 text-[#6e1d27]" />
+                              </motion.div>
+                            </button>
+                            
+                            <AnimatePresence>
+                              {showRoleDropdown && (
+                                <motion.div
+                                  initial={{ opacity: 0, y: -10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  exit={{ opacity: 0, y: -10 }}
+                                  transition={{ duration: 0.2 }}
+                                  className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border-2 border-[#6e1d27] rounded-lg shadow-lg max-h-48 overflow-y-auto"
+                                >
+                                  {roleOptions.map((role) => (
+                                    <button
+                                      key={role}
+                                      type="button"
+                                      onClick={() => {
+                                        setProfileData({...profileData, role});
+                                        setShowRoleDropdown(false);
+                                      }}
+                                      className="w-full text-left px-4 py-2 hover:bg-[#6e1d27]/10 transition-colors duration-200 font-ibm-plex text-[#3d0e15] flex items-center justify-between"
+                                    >
+                                      <span>{role}</span>
+                                      {profileData.role === role && (
+                                        <Check className="h-4 w-4 text-[#6e1d27]" />
+                                      )}
+                                    </button>
+                                  ))}
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
                         </div>
                         <div>
                           <Label htmlFor="company" className="text-[#3d0e15] font-ibm-plex font-medium hand-drawn-text">
@@ -398,6 +558,18 @@ export default function ProfilePage() {
                             className="hand-drawn-input bg-white/80 border-2 border-[#6e1d27] text-[#3d0e15] font-ibm-plex"
                           />
                         </div>
+                      </div>
+                      <div>
+                        <Label htmlFor="goal" className="text-[#3d0e15] font-ibm-plex font-medium hand-drawn-text">
+                          Main Goal with Datrix
+                        </Label>
+                        <Input
+                          id="goal"
+                          value={profileData.goal}
+                          onChange={(e) => setProfileData({...profileData, goal: e.target.value})}
+                          className="hand-drawn-input bg-white/80 border-2 border-[#6e1d27] text-[#3d0e15] font-ibm-plex"
+                          placeholder="What do you want to achieve with Datrix?"
+                        />
                       </div>
                       <div className="flex justify-end space-x-3 pt-4">
                         <Button
@@ -428,7 +600,7 @@ export default function ProfilePage() {
                         <User className="w-5 h-5 text-[#6e1d27]" />
                         <div>
                           <p className="text-sm text-[#6e1d27] font-ibm-plex">Full Name</p>
-                          <p className="font-semibold text-[#3d0e15] font-ibm-plex">{profileData.name}</p>
+                          <p className="font-semibold text-[#3d0e15] font-ibm-plex">{profileData.name || 'Not specified'}</p>
                         </div>
                       </div>
                       <div className="flex items-center space-x-3">
@@ -442,16 +614,25 @@ export default function ProfilePage() {
                         <Briefcase className="w-5 h-5 text-[#6e1d27]" />
                         <div>
                           <p className="text-sm text-[#6e1d27] font-ibm-plex">Role/Title</p>
-                          <p className="font-semibold text-[#3d0e15] font-ibm-plex">{profileData.role}</p>
+                          <p className="font-semibold text-[#3d0e15] font-ibm-plex">{profileData.role || 'Not specified'}</p>
                         </div>
                       </div>
                       <div className="flex items-center space-x-3">
                         <Building2 className="w-5 h-5 text-[#6e1d27]" />
                         <div>
                           <p className="text-sm text-[#6e1d27] font-ibm-plex">Company</p>
-                          <p className="font-semibold text-[#3d0e15] font-ibm-plex">{profileData.company}</p>
+                          <p className="font-semibold text-[#3d0e15] font-ibm-plex">{profileData.company || 'Not specified'}</p>
                         </div>
                       </div>
+                      {profileData.goal && (
+                        <div className="flex items-start space-x-3 md:col-span-2">
+                          <Settings className="w-5 h-5 text-[#6e1d27] mt-1" />
+                          <div>
+                            <p className="text-sm text-[#6e1d27] font-ibm-plex">Main Goal</p>
+                            <p className="font-semibold text-[#3d0e15] font-ibm-plex">{profileData.goal}</p>
+                          </div>
+                        </div>
+                      )}
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -512,27 +693,6 @@ export default function ProfilePage() {
                         transition={{ duration: 0.3 }}
                         className="space-y-4 p-4 bg-white/50 rounded-lg border border-[#6e1d27]/20"
                       >
-                        <div>
-                          <Label htmlFor="currentPassword" className="text-[#3d0e15] font-ibm-plex font-medium">
-                            Current Password
-                          </Label>
-                          <div className="relative">
-                            <Input
-                              id="currentPassword"
-                              type={showCurrentPassword ? 'text' : 'password'}
-                              value={passwordData.currentPassword}
-                              onChange={(e) => setPasswordData({...passwordData, currentPassword: e.target.value})}
-                              className="hand-drawn-input bg-white/80 border-2 border-[#6e1d27] text-[#3d0e15] font-ibm-plex pr-10"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#6e1d27]"
-                            >
-                              {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                            </button>
-                          </div>
-                        </div>
                         <div>
                           <Label htmlFor="newPassword" className="text-[#3d0e15] font-ibm-plex font-medium">
                             New Password
@@ -648,10 +808,12 @@ export default function ProfilePage() {
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ duration: 0.4, delay: 0.4 + index * 0.1 }}
-                      className={`p-4 rounded-lg border-2 transition-all duration-300 hand-drawn-border ${
+                      className={`h-32 p-4 rounded-lg border-2 transition-all duration-300 hand-drawn-border flex flex-col justify-between ${
                         integration.connected
                           ? 'border-green-500 bg-green-50'
-                          : 'border-[#6e1d27]/30 bg-white/50'
+                          : integration.id === 'airtable'
+                          ? 'border-[#6e1d27]/30 bg-white/50 hover:border-[#6e1d27] hover:bg-white/70'
+                          : 'border-[#6e1d27]/20 bg-gray-50/50 opacity-60'
                       }`}
                     >
                       <div className="flex items-center justify-between mb-3">
@@ -660,7 +822,7 @@ export default function ProfilePage() {
                             className="w-6 h-6" 
                             style={{ color: integration.color }}
                           />
-                          <span className="font-semibold text-[#3d0e15] font-ibm-plex">
+                          <span className="font-semibold text-[#3d0e15] font-ibm-plex text-sm">
                             {integration.name}
                           </span>
                         </div>
@@ -673,7 +835,7 @@ export default function ProfilePage() {
                         <div className="flex gap-2">
                           <Button
                             onClick={() => { setSelectedModal(integration.id); setModalInputs(integration.credentials || {}); }}
-                            className="hand-drawn-button bg-[#6e1d27] hover:bg-[#912d3c] text-white font-ibm-plex"
+                            className="hand-drawn-button bg-[#6e1d27] hover:bg-[#912d3c] text-white font-ibm-plex text-xs px-2 py-1 h-7"
                             size="sm"
                           >
                             Edit
@@ -681,20 +843,24 @@ export default function ProfilePage() {
                           <Button
                             onClick={() => handleDisconnectIntegration(integration.id as 'airtable' | 'postgres')}
                             variant="outline"
-                            className="hand-drawn-border border-2 border-red-500 text-red-600 hover:bg-red-50 font-ibm-plex"
+                            className="hand-drawn-border border-2 border-red-500 text-red-600 hover:bg-red-50 font-ibm-plex text-xs px-2 py-1 h-7"
                             size="sm"
                           >
                             Delete
                           </Button>
                         </div>
-                      ) : (
+                      ) : integration.id === 'airtable' ? (
                         <Button
                           onClick={() => { setSelectedModal(integration.id); setModalInputs({}); }}
                           size="sm"
-                          className="w-full hand-drawn-button bg-[#6e1d27] hover:bg-[#912d3c] text-white font-ibm-plex"
+                          className="w-full hand-drawn-button bg-[#6e1d27] hover:bg-[#912d3c] text-white font-ibm-plex text-xs h-7"
                         >
                           Connect
                         </Button>
+                      ) : (
+                        <div className="text-center">
+                          <span className="text-xs text-gray-500 font-ibm-plex">Coming Soon</span>
+                        </div>
                       )}
                     </motion.div>
                   ))}
@@ -874,9 +1040,9 @@ export default function ProfilePage() {
         )}
       </AnimatePresence>
 
-      {/* Edit Modal */}
+      {/* Airtable Connection Modal */}
       <AnimatePresence>
-        {selectedModal && (
+        {selectedModal === 'airtable' && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -891,93 +1057,51 @@ export default function ProfilePage() {
               className="bg-white rounded-lg p-6 max-w-md w-full hand-drawn-container"
               onClick={e => e.stopPropagation()}
             >
-              {(() => {
-                const integration = integrations.find(i => i.id === selectedModal);
-                if (!integration) return null;
-                return (
-                  <div className="space-y-4">
-                    <div className="flex items-center space-x-3 mb-4">
-                      <integration.icon className="w-8 h-8" style={{ color: integration.color }} />
-                      <h3 className="text-xl font-bold text-[#3d0e15] font-ibm-plex">
-                        {integration.connected ? 'Edit' : 'Connect'} {integration.name}
-                      </h3>
-                    </div>
-                    <p className="text-[#6e1d27] font-ibm-plex">
-                      {integration.id === 'airtable' && "Enter your Airtable Access Token and base ID to connect your tables."}
-                      {integration.id === 'postgres' && "Provide your PostgreSQL connection string to access your database."}
-                    </p>
-                    <div className="space-y-3">
-                      {/* For Airtable */}
-                      {integration.id === 'airtable' && (
-                        <>
-                          <SecretInput
-                            value={modalInputs.apiKey || ''}
-                            onChange={e => setModalInputs(inputs => ({ ...inputs, apiKey: e.target.value }))}
-                            placeholder="Access Token"
-                            className="hand-drawn-input bg-white border-2 border-[#6e1d27] font-ibm-plex"
-                          />
-                          <SecretInput
-                            value={modalInputs.baseId || ''}
-                            onChange={e => setModalInputs(inputs => ({ ...inputs, baseId: e.target.value }))}
-                            placeholder="Base ID"
-                            className="hand-drawn-input bg-white border-2 border-[#6e1d27] font-ibm-plex"
-                          />
-                        </>
-                      )}
-                      {/* For PostgreSQL */}
-                      {integration.id === 'postgres' && (
-                        <SecretInput
-                          value={modalInputs.connectionString || ''}
-                          onChange={e => setModalInputs(inputs => ({ ...inputs, connectionString: e.target.value }))}
-                          placeholder="Connection String"
-                          className="hand-drawn-input bg-white border-2 border-[#6e1d27] font-ibm-plex"
-                        />
-                      )}
-                    </div>
-                    <div className="flex space-x-3 pt-4">
-                      <Button
-                        onClick={() => { setSelectedModal(null); setModalInputs({}); }}
-                        variant="outline"
-                        className="flex-1 hand-drawn-border border-2 border-[#6e1d27] text-[#6e1d27] hover:bg-[#6e1d27] hover:text-white font-ibm-plex"
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        onClick={async () => {
-                          let credentials: any = {};
-                          if (integration.id === 'airtable') {
-                            credentials = {
-                              apiKey: modalInputs.apiKey,
-                              baseId: modalInputs.baseId,
-                            };
-                          } else if (integration.id === 'postgres') {
-                            credentials = {
-                              connectionString: modalInputs.connectionString,
-                            };
-                          }
-                          const { error } = await saveUserDataSource(user.id, integration.id as "airtable" | "postgres", credentials);
-                          if (!error) {
-                            setIntegrations(prev =>
-                              prev.map(i =>
-                                i.id === integration.id
-                                  ? { ...i, connected: true, credentials }
-                                  : i
-                              )
-                            );
-                            setSelectedModal(null);
-                            setModalInputs({});
-                          } else {
-                            alert("Failed to save credentials: " + error.message);
-                          }
-                        }}
-                        className="flex-1 hand-drawn-button bg-[#6e1d27] hover:bg-[#912d3c] text-white font-ibm-plex"
-                      >
-                        Save
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })()}
+              <div className="space-y-4">
+                <div className="flex items-center space-x-3 mb-4">
+                  <Database className="w-8 h-8" style={{ color: '#ffb700' }} />
+                  <h3 className="text-xl font-bold text-[#3d0e15] font-ibm-plex">
+                    {integrations.find(i => i.id === 'airtable')?.connected ? 'Edit' : 'Connect'} Airtable
+                  </h3>
+                </div>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                  <p className="text-sm text-blue-800 font-ibm-plex">
+                    <strong>Important:</strong> Make sure your Airtable access token has <strong>read and write permissions</strong> for the bases you want to use with Datrix.
+                  </p>
+                </div>
+                <p className="text-[#6e1d27] font-ibm-plex text-sm">
+                  Enter your Airtable Access Token to connect your tables and bases.
+                </p>
+                <div className="space-y-3">
+                  <SecretInput
+                    value={modalInputs.apiKey || ''}
+                    onChange={e => setModalInputs(inputs => ({ ...inputs, apiKey: e.target.value }))}
+                    placeholder="Airtable Access Token"
+                    className="hand-drawn-input bg-white border-2 border-[#6e1d27] font-ibm-plex"
+                  />
+                </div>
+                <div className="flex space-x-3 pt-4">
+                  <Button
+                    onClick={() => { setSelectedModal(null); setModalInputs({}); }}
+                    variant="outline"
+                    className="flex-1 hand-drawn-border border-2 border-[#6e1d27] text-[#6e1d27] hover:bg-[#6e1d27] hover:text-white font-ibm-plex"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={async () => {
+                      const credentials = {
+                        apiKey: modalInputs.apiKey,
+                      };
+                      await handleConnectIntegration('airtable', credentials);
+                    }}
+                    disabled={!modalInputs.apiKey}
+                    className="flex-1 hand-drawn-button bg-[#6e1d27] hover:bg-[#912d3c] text-white font-ibm-plex disabled:opacity-50"
+                  >
+                    {integrations.find(i => i.id === 'airtable')?.connected ? 'Update' : 'Connect'}
+                  </Button>
+                </div>
+              </div>
             </motion.div>
           </motion.div>
         )}
