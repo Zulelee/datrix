@@ -663,7 +663,7 @@ export async function PATCH(request: NextRequest) {
   return POST(request);
 }
 
-export const getUserIdByEmail = async (email: string) => {
+const getUserIdByEmail = async (email: string) => {
   try {
     const { data, error } = await supabase.auth.admin.listUsers()
     

@@ -3,7 +3,6 @@ import { streamText, tool } from 'ai';
 import { z } from 'zod';
 import { getUserDataSources } from '@/lib/saveDataSource';
 import { decrypt } from '@/lib/encryption';
-import { logRun, inferDataType } from '@/lib/runLogger';
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
@@ -214,29 +213,9 @@ async function upsertAirtableRecords(token: string, params: any, userId: string)
   console.log('Table Name:', tableName);
   console.log('Records to insert:', JSON.stringify(records, null, 2));
   
-  // Log the run as "In Progress" first
-  const dataType = inferDataType(records);
-  const { data: runLog } = await logRun({
-    user_id: userId,
-    data_type: dataType,
-    source: 'Email',
-    destination: 'Airtable',
-    status: 'In Progress'
-  });
-  
   try {
     // Validate required parameters
     if (!baseId) {
-      // Update run status to Failed
-      if (runLog?.id) {
-        await logRun({
-          user_id: userId,
-          data_type: dataType,
-          source: 'Email',
-          destination: 'Airtable',
-          status: 'Failed'
-        });
-      }
       return { 
         success: false, 
         error: 'Missing baseId parameter. You must provide the exact baseId from the schema.' 
@@ -244,16 +223,6 @@ async function upsertAirtableRecords(token: string, params: any, userId: string)
     }
     
     if (!tableName) {
-      // Update run status to Failed
-      if (runLog?.id) {
-        await logRun({
-          user_id: userId,
-          data_type: dataType,
-          source: 'Email',
-          destination: 'Airtable',
-          status: 'Failed'
-        });
-      }
       return { 
         success: false, 
         error: 'Missing tableName parameter. You must provide the exact table name as it appears in the schema.' 
@@ -261,16 +230,6 @@ async function upsertAirtableRecords(token: string, params: any, userId: string)
     }
     
     if (!records || !Array.isArray(records) || records.length === 0) {
-      // Update run status to Failed
-      if (runLog?.id) {
-        await logRun({
-          user_id: userId,
-          data_type: dataType,
-          source: 'Email',
-          destination: 'Airtable',
-          status: 'Failed'
-        });
-      }
       return { 
         success: false, 
         error: 'Missing or invalid records parameter. You must provide an array of records to insert.' 
@@ -313,17 +272,6 @@ async function upsertAirtableRecords(token: string, params: any, userId: string)
       const error = await response.json();
       console.log('Airtable error response:', error);
       
-      // Update run status to Failed
-      if (runLog?.id) {
-        await logRun({
-          user_id: userId,
-          data_type: dataType,
-          source: 'Email',
-          destination: 'Airtable',
-          status: 'Failed'
-        });
-      }
-      
       // Provide more detailed error message based on common issues
       let errorMessage = error.message || 'Failed to create records';
       
@@ -345,17 +293,6 @@ async function upsertAirtableRecords(token: string, params: any, userId: string)
     const data = await response.json();
     console.log('Airtable success response:', data);
     
-    // Update run status to Success
-    if (runLog?.id) {
-      await logRun({
-        user_id: userId,
-        data_type: dataType,
-        source: 'Email',
-        destination: 'Airtable',
-        status: 'Success'
-      });
-    }
-    
     return {
       success: true,
       integrationType: 'airtable',
@@ -363,23 +300,11 @@ async function upsertAirtableRecords(token: string, params: any, userId: string)
       recordsProcessed: records.length,
       recordsCreated: data.data.records.length,
       recordsUpdated: 0,
-      message: `Successfully added ${data.data.records.length} record(s) to ${tableName} in Airtable`,
-      runLogId: runLog?.id
+      message: `Successfully added ${data.data.records.length} record(s) to ${tableName} in Airtable`
     };
 
   } catch (error) {
     console.error('Error upserting Airtable records:', error);
-    
-    // Update run status to Failed
-    if (runLog?.id) {
-      await logRun({
-        user_id: userId,
-        data_type: dataType,
-        source: 'Email',
-        destination: 'Airtable',
-        status: 'Failed'
-      });
-    }
     
     return { 
       success: false, 
@@ -505,16 +430,6 @@ async function postgresIntegrationTool(userId: string, action: string, params: a
       };
     
     case 'upsertRecords':
-      // Log the run for PostgreSQL
-      const dataType = inferDataType(params.records);
-      await logRun({
-        user_id: userId,
-        data_type: dataType,
-        source: 'Email',
-        destination: 'PostgreSQL',
-        status: 'Success'
-      });
-      
       // Mock success response
       return {
         success: true,

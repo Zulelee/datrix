@@ -1,13 +1,12 @@
 import { openai } from '@ai-sdk/openai';
-import { streamText, tool } from 'ai';
+import { generateObject, streamText, tool } from 'ai';
 import { z } from 'zod';
 import { getUserDataSources } from '@/lib/saveDataSource';
-import { decrypt } from '@/lib/encryption';
-import { logRun, inferDataType } from '@/lib/runLogger';
+import { supabase } from '@/lib/supabaseRoleClient';
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
-
+let user_id = null;
 async function getUserDataSourcesTool(userId: string) {
     if (!userId) {
         console.log('No userId provided to tool');
@@ -105,7 +104,7 @@ async function airtableIntegrationTool(userId: string, action: string, params: a
         return await getAirtableSchema(token);
       
       case 'upsertRecords':
-        return await upsertAirtableRecords(token, params, userId);
+        return await upsertAirtableRecords(token, params);
       
       case 'getRecords':
         return await getAirtableRecords(token, params);
@@ -205,7 +204,7 @@ async function getAirtableSchema(token: string) {
   }
 }
 
-async function upsertAirtableRecords(token: string, params: any, userId: string) {
+async function upsertAirtableRecords(token: string, params: any) {
   const { baseId, tableName, records } = params;
   
   console.log('=== AIRTABLE UPSERT DEBUG ===');
@@ -214,29 +213,9 @@ async function upsertAirtableRecords(token: string, params: any, userId: string)
   console.log('Table Name:', tableName);
   console.log('Records to insert:', JSON.stringify(records, null, 2));
   
-  // Log the run as "In Progress" first
-  const dataType = inferDataType(records);
-  const { data: runLog } = await logRun({
-    user_id: userId,
-    data_type: dataType,
-    source: 'DatrixAI',
-    destination: 'Airtable',
-    status: 'In Progress'
-  });
-  
   try {
     // Validate required parameters
     if (!baseId) {
-      // Update run status to Failed
-      if (runLog?.id) {
-        await logRun({
-          user_id: userId,
-          data_type: dataType,
-          source: 'DatrixAI',
-          destination: 'Airtable',
-          status: 'Failed'
-        });
-      }
       return { 
         success: false, 
         error: 'Missing baseId parameter. You must provide the exact baseId from the schema.' 
@@ -244,16 +223,6 @@ async function upsertAirtableRecords(token: string, params: any, userId: string)
     }
     
     if (!tableName) {
-      // Update run status to Failed
-      if (runLog?.id) {
-        await logRun({
-          user_id: userId,
-          data_type: dataType,
-          source: 'DatrixAI',
-          destination: 'Airtable',
-          status: 'Failed'
-        });
-      }
       return { 
         success: false, 
         error: 'Missing tableName parameter. You must provide the exact table name as it appears in the schema.' 
@@ -261,16 +230,6 @@ async function upsertAirtableRecords(token: string, params: any, userId: string)
     }
     
     if (!records || !Array.isArray(records) || records.length === 0) {
-      // Update run status to Failed
-      if (runLog?.id) {
-        await logRun({
-          user_id: userId,
-          data_type: dataType,
-          source: 'DatrixAI',
-          destination: 'Airtable',
-          status: 'Failed'
-        });
-      }
       return { 
         success: false, 
         error: 'Missing or invalid records parameter. You must provide an array of records to insert.' 
@@ -313,17 +272,6 @@ async function upsertAirtableRecords(token: string, params: any, userId: string)
       const error = await response.json();
       console.log('Airtable error response:', error);
       
-      // Update run status to Failed
-      if (runLog?.id) {
-        await logRun({
-          user_id: userId,
-          data_type: dataType,
-          source: 'DatrixAI',
-          destination: 'Airtable',
-          status: 'Failed'
-        });
-      }
-      
       // Provide more detailed error message based on common issues
       let errorMessage = error.message || 'Failed to create records';
       
@@ -338,23 +286,47 @@ async function upsertAirtableRecords(token: string, params: any, userId: string)
       } else if (error.error?.type === 'INVALID_MULTIPLE_CHOICE_OPTIONS') {
         errorMessage = 'Invalid option: One or more select/multiselect values are not in the list of allowed options.';
       }
+
+      const { object } = await (generateObject as any)({
+        model: openai('gpt-4.1-mini'),
+        schema: z.object({
+          dataType: z.string()
+        }),
+        prompt: `What is the type of the data added to Airtable? (e.g. contact, deal, task, etc.) I want one word. The data is: ${JSON.stringify(records)}`
+      });
+  
+  
+      await logAutomationRun({
+        dataType: object.dataType,
+        source: 'Datrix AI',
+        destination: 'airtable',
+        status: 'Failed',
+        userId: user_id
+      });
       
       return { success: false, error: errorMessage, details: error };
     }
 
     const data = await response.json();
     console.log('Airtable success response:', data);
-    
-    // Update run status to Success
-    if (runLog?.id) {
-      await logRun({
-        user_id: userId,
-        data_type: dataType,
-        source: 'DatrixAI',
-        destination: 'Airtable',
-        status: 'Success'
-      });
-    }
+
+    const { object } = await (generateObject as any)({
+      model: openai('gpt-4.1-mini'),
+      schema: z.object({
+        dataType: z.string()
+      }),
+      prompt: `What is the type of the data added to Airtable? (e.g. contact, deal, task, etc.) I want one word. The data is: ${JSON.stringify(records)}`
+    });
+
+    console.log('Generated object:', object);
+
+    await logAutomationRun({
+      dataType: object.dataType,
+      source: 'Datrix AI',
+      destination: 'airtable',
+      status: 'Success',
+      userId: user_id
+    });
     
     return {
       success: true,
@@ -363,24 +335,11 @@ async function upsertAirtableRecords(token: string, params: any, userId: string)
       recordsProcessed: records.length,
       recordsCreated: data.data.records.length,
       recordsUpdated: 0,
-      message: `Successfully added ${data.data.records.length} record(s) to ${tableName} in Airtable`,
-      runLogId: runLog?.id
+      message: `Successfully added ${data.data.records.length} record(s) to ${tableName} in Airtable`
     };
 
   } catch (error) {
     console.error('Error upserting Airtable records:', error);
-    
-    // Update run status to Failed
-    if (runLog?.id) {
-      await logRun({
-        user_id: userId,
-        data_type: dataType,
-        source: 'DatrixAI',
-        destination: 'Airtable',
-        status: 'Failed'
-      });
-    }
-    
     return { 
       success: false, 
       error: error instanceof Error ? error.message : 'Unknown error' 
@@ -505,16 +464,6 @@ async function postgresIntegrationTool(userId: string, action: string, params: a
       };
     
     case 'upsertRecords':
-      // Log the run for PostgreSQL
-      const dataType = inferDataType(params.records);
-      await logRun({
-        user_id: userId,
-        data_type: dataType,
-        source: 'DatrixAI',
-        destination: 'PostgreSQL',
-        status: 'Success'
-      });
-      
       // Mock success response
       return {
         success: true,
@@ -536,6 +485,7 @@ export async function POST(req: Request) {
   
   console.log('Chat API called with userId:', userId);
   console.log('Messages:', messages.length, 'messages');
+  user_id = userId;
 
   
   const result = await (streamText as any)({
@@ -686,4 +636,49 @@ Be helpful, thorough, and focus on practical data organization solutions.`,
   });
 
   return (result as any).toDataStreamResponse();
+} 
+
+
+// Helper function to log automation run to database
+async function logAutomationRun(data: {
+  dataType: string;
+  source: string;
+  destination: string;
+  status: 'Success' | 'Failed' | 'Processed' | 'Skip';
+  userId?: string;
+  details?: any;
+}) {
+  try {
+    const { data: runData, error } = await supabase
+      .from('runs')
+      .insert({
+        user_id: data.userId || null,
+        run_time: new Date().toISOString(),
+        data_type: data.dataType,
+        source: data.source,
+        destination: data.destination,
+        status: data.status
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('❌ Failed to log automation run to database:', error);
+      return null;
+    }
+
+    console.log('✅ Automation run logged to database:', {
+      id: runData.id,
+      dataType: data.dataType,
+      source: data.source,
+      destination: data.destination,
+      status: data.status,
+      userId: data.userId
+    });
+
+    return runData;
+  } catch (error) {
+    console.error('❌ Error logging automation run to database:', error);
+    return null;
+  }
 }

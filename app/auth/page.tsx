@@ -101,7 +101,13 @@ export default function AuthPage() {
       const { error } = await supabase.auth.signUp({
         email,
         password,
-        options: { data: { name } , emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/onboarding`}
+        options: { 
+          data: { 
+            full_name: name,
+            name: name  // Adding both name and full_name to ensure compatibility
+          }, 
+          emailRedirectTo: `/onboarding`
+        }
       });
       if (error) {
         setError(error.message);
