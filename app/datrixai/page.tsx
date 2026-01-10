@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useRef } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { FlickeringGrid } from '@/components/ui/flickering-grid';
-import { 
+import { useState, useEffect, useRef } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { FlickeringGrid } from "@/components/ui/flickering-grid";
+import {
   Send,
   Paperclip,
   Upload,
@@ -29,24 +29,24 @@ import {
   ThumbsDown,
   Loader2,
   Trash2,
-  RotateCcw
-} from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { supabase } from '@/lib/supabaseClient';
-import { useRouter } from 'next/navigation';
-import { OnboardingNavbar } from '@/components/Navbar';
-import { useChat } from '@ai-sdk/react';
-import { 
-  saveConversation, 
-  updateConversation, 
+  RotateCcw,
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { supabase } from "@/lib/supabaseClient";
+import { useRouter } from "next/navigation";
+import { OnboardingNavbar } from "@/components/Navbar";
+import { useChat } from "@ai-sdk/react";
+import {
+  saveConversation,
+  updateConversation,
   createMessage,
   getUserConversation,
-  type ChatMessage 
-} from '@/lib/chatbot';
+  type ChatMessage,
+} from "@/lib/chatbot";
 
 interface Message {
   id: string;
-  type: 'user' | 'ai' | 'system';
+  type: "user" | "ai" | "system";
   content: string;
   timestamp: Date;
   file?: {
@@ -54,7 +54,7 @@ interface Message {
     size: number;
     type: string;
   };
-  status?: 'processing' | 'completed' | 'error';
+  status?: "processing" | "completed" | "error";
   isStreaming?: boolean;
 }
 
@@ -71,18 +71,28 @@ export default function DatrixAIPage() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isDragging, setIsDragging] = useState(false);
-  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
+  const [currentConversationId, setCurrentConversationId] = useState<
+    string | null
+  >(null);
   const [isSaving, setIsSaving] = useState(false);
   const [initialMessages, setInitialMessages] = useState<any[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
-  
+
   // Use the AI SDK's useChat hook
-  const { messages, input, handleInputChange, handleSubmit, isLoading, append, setMessages } = useChat({
-    api: '/api/chat',
+  const {
+    messages,
+    input,
+    handleInputChange,
+    handleSubmit,
+    isLoading,
+    append,
+    setMessages,
+  } = useChat({
+    api: "/api/chat",
     body: {
-      userId: user?.id
+      userId: user?.id,
     },
     initialMessages: initialMessages,
     onFinish: async (message) => {
@@ -90,7 +100,7 @@ export default function DatrixAIPage() {
       if (user?.id) {
         await saveConversationToDb();
       }
-    }
+    },
   });
 
   // Function to save conversation to database
@@ -100,17 +110,17 @@ export default function DatrixAIPage() {
     setIsSaving(true);
     try {
       // Convert AI SDK messages to our ChatMessage format
-      const chatMessages: ChatMessage[] = messages.map(msg => ({
+      const chatMessages: ChatMessage[] = messages.map((msg) => ({
         id: msg.id,
-        role: msg.role as 'user' | 'assistant',
+        role: msg.role as "user" | "assistant",
         content: msg.content,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       }));
 
       // Always update the existing conversation (since each user has only one)
       await updateConversation(currentConversationId, chatMessages);
     } catch (error) {
-      console.error('Error saving conversation:', error);
+      console.error("Error saving conversation:", error);
     } finally {
       setIsSaving(false);
     }
@@ -119,26 +129,26 @@ export default function DatrixAIPage() {
   // Mock connected sources
   const [connectedSources] = useState<ConnectedSource[]>([
     {
-      id: 'airtable',
-      name: 'Airtable',
+      id: "airtable",
+      name: "Airtable",
       icon: Database,
-      color: '#ffb700',
-      connected: true
+      color: "#ffb700",
+      connected: true,
     },
     {
-      id: 'postgres',
-      name: 'PostgreSQL',
+      id: "postgres",
+      name: "PostgreSQL",
       icon: Server,
-      color: '#336791',
-      connected: true
+      color: "#336791",
+      connected: true,
     },
     {
-      id: 'notion',
-      name: 'Notion',
+      id: "notion",
+      name: "Notion",
       icon: FileText,
-      color: '#000000',
-      connected: true
-    }
+      color: "#000000",
+      connected: true,
+    },
   ]);
 
   useEffect(() => {
@@ -158,13 +168,15 @@ export default function DatrixAIPage() {
   }, [user, initialMessages, setMessages]);
 
   const checkUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
-      router.push('/auth');
+      router.push("/auth");
       return;
     }
     setUser(user);
-    
+
     // Load existing conversation
     await loadUserConversation(user.id);
     setLoading(false);
@@ -173,51 +185,53 @@ export default function DatrixAIPage() {
   const loadUserConversation = async (userId: string) => {
     try {
       const { data, error } = await getUserConversation(userId);
-      
+
       if (!error && data) {
         setCurrentConversationId(data.id);
-        
+
         // Convert ChatMessage format to AI SDK message format
-        const aiSdkMessages = data.conversation_json.messages.map((msg: ChatMessage) => ({
-          id: msg.id,
-          role: msg.role,
-          content: msg.content
-        }));
-        
+        const aiSdkMessages = data.conversation_json.messages.map(
+          (msg: ChatMessage) => ({
+            id: msg.id,
+            role: msg.role,
+            content: msg.content,
+          })
+        );
+
         setInitialMessages(aiSdkMessages);
-        
+
         // If useChat is already initialized, update messages
         if (setMessages) {
           setMessages(aiSdkMessages);
         }
       }
     } catch (error) {
-      console.error('Error loading conversation:', error);
+      console.error("Error loading conversation:", error);
     }
   };
 
   const logout = async () => {
     await supabase.auth.signOut();
-    router.push('/');
+    router.push("/");
   };
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   const resetChat = async () => {
     if (!user?.id || !currentConversationId) return;
-    
+
     try {
       // Clear messages in the UI immediately
       setMessages([]);
-      
+
       // Update the database to clear the conversation
       await updateConversation(currentConversationId, []);
-      
-      console.log('Chat reset successfully');
+
+      console.log("Chat reset successfully");
     } catch (error) {
-      console.error('Error resetting chat:', error);
+      console.error("Error resetting chat:", error);
       // You might want to show an error message to the user here
     }
   };
@@ -227,31 +241,38 @@ export default function DatrixAIPage() {
 
     const file = files[0];
     const allowedTypes = [
-      'text/csv',
-      'application/vnd.ms-excel',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'application/pdf',
-      'text/plain'
+      "text/csv",
+      "application/vnd.ms-excel",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "application/pdf",
+      "text/plain",
     ];
 
     if (!allowedTypes.includes(file.type)) {
-      alert('Sorry, I only support CSV, Excel, PDF, and text files. Please upload a supported file type.');
+      alert(
+        "Sorry, I only support CSV, Excel, PDF, and text files. Please upload a supported file type."
+      );
       return;
     }
 
     try {
       // Send file to document processing API
       const formData = new FormData();
-      formData.append('file', file);
-      formData.append('text', ""); // As shown in your curl example
+      formData.append("file", file);
+      formData.append("text", ""); // As shown in your curl example
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/test/process-document`, {
-        method: 'POST',
-        body: formData
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/test/process-document`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
 
       if (!response.ok) {
-        throw new Error(`Document processing failed: ${response.status} ${response.statusText}`);
+        throw new Error(
+          `Document processing failed: ${response.status} ${response.statusText}`
+        );
       }
 
       const documentData = await response.json();
@@ -264,16 +285,19 @@ ${JSON.stringify(documentData, null, 2)}
 
       // Use append to send the file content directly to the AI
       await append({
-        role: 'user',
-        content: filePrompt
+        role: "user",
+        content: filePrompt,
       });
 
       // Save conversation will be handled by onFinish callback
-
     } catch (error) {
-      console.error('File processing error:', error);
-      alert(`Sorry, I encountered an error while processing your file: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      }
+      console.error("File processing error:", error);
+      alert(
+        `Sorry, I encountered an error while processing your file: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
+    }
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -293,17 +317,21 @@ ${JSON.stringify(documentData, null, 2)}
   };
 
   const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) return "0 Bytes";
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
   const getFileIcon = (type: string) => {
-    if (type.includes('csv') || type.includes('excel') || type.includes('sheet')) {
+    if (
+      type.includes("csv") ||
+      type.includes("excel") ||
+      type.includes("sheet")
+    ) {
       return FileSpreadsheet;
-    } else if (type.includes('pdf')) {
+    } else if (type.includes("pdf")) {
       return FileText;
     }
     return File;
@@ -331,9 +359,11 @@ ${JSON.stringify(documentData, null, 2)}
       <OnboardingNavbar onLogout={logout} />
 
       {/* Main Content - Fixed height layout */}
-      <div className="relative z-10 pt-20 px-4 sm:px-6 lg:px-8 pb-4" style={{ height: 'calc(100vh - 1rem)' }}>
+      <div
+        className="relative z-10 pt-20 px-4 sm:px-6 lg:px-8 pb-4"
+        style={{ height: "calc(100vh - 1rem)" }}
+      >
         <div className="max-w-6xl mx-auto h-full flex gap-6">
-          
           {/* Sidebar - Connected Sources */}
           {/* <motion.div
             initial={{ opacity: 0, x: -30 }}
@@ -421,13 +451,34 @@ ${JSON.stringify(documentData, null, 2)}
             <div className="hand-drawn-container bg-white/60 backdrop-blur-sm relative h-full flex flex-col overflow-hidden">
               {/* Decorative corner doodles */}
               <div className="absolute top-2 left-2 w-4 h-4 opacity-30 z-10">
-                <svg viewBox="0 0 24 24" className="w-full h-full text-[#6e1d27]">
-                  <path d="M3 3 L21 3 L21 21 L3 21 Z" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="hand-drawn-path" />
+                <svg
+                  viewBox="0 0 24 24"
+                  className="w-full h-full text-[#6e1d27]"
+                >
+                  <path
+                    d="M3 3 L21 3 L21 21 L3 21 Z"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    className="hand-drawn-path"
+                  />
                 </svg>
               </div>
               <div className="absolute top-2 right-2 w-4 h-4 opacity-30 z-10">
-                <svg viewBox="0 0 24 24" className="w-full h-full text-[#6e1d27]">
-                  <circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" strokeWidth="1.5" className="hand-drawn-path" />
+                <svg
+                  viewBox="0 0 24 24"
+                  className="w-full h-full text-[#6e1d27]"
+                >
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="8"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    className="hand-drawn-path"
+                  />
                 </svg>
               </div>
 
@@ -435,13 +486,13 @@ ${JSON.stringify(documentData, null, 2)}
               <div className="p-6 border-b border-[#6e1d27]/20 flex-shrink-0">
                 <div className="flex items-center justify-between">
                   <div>
-                <h1 className="text-2xl font-bold text-[#3d0e15] font-ibm-plex hand-drawn-text flex items-center">
-                  <Bot className="mr-3 h-6 w-6 text-[#6e1d27]" />
-                  DatrixAI Assistant
-                </h1>
-                <p className="text-[#6e1d27] font-ibm-plex mt-1">
-                  Your intelligent data processing companion
-                </p>
+                    <h1 className="text-2xl font-bold text-[#3d0e15] font-ibm-plex hand-drawn-text flex items-center">
+                      <Bot className="mr-3 h-6 w-6 text-[#6e1d27]" />
+                      DatrixAI Assistant
+                    </h1>
+                    <p className="text-[#6e1d27] font-ibm-plex mt-1">
+                      Your intelligent data processing companion
+                    </p>
                   </div>
                   <div className="flex items-center space-x-4">
                     {/* Reset Chat Button */}
@@ -456,7 +507,7 @@ ${JSON.stringify(documentData, null, 2)}
                       <RotateCcw className="w-4 h-4 mr-2" />
                       Reset Chat
                     </Button>
-                    
+
                     {/* Saving Indicator */}
                     {isSaving && (
                       <div className="flex items-center text-sm text-[#6e1d27]/60 font-ibm-plex">
@@ -469,14 +520,14 @@ ${JSON.stringify(documentData, null, 2)}
               </div>
 
               {/* Messages Area - Scrollable with proper height */}
-              <div 
+              <div
                 className="flex-1 overflow-y-auto p-6 space-y-4"
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
-                style={{ 
-                  scrollbarWidth: 'thin',
-                  scrollbarColor: '#6e1d27 transparent'
+                style={{
+                  scrollbarWidth: "thin",
+                  scrollbarColor: "#6e1d27 transparent",
                 }}
               >
                 <AnimatePresence>
@@ -486,17 +537,33 @@ ${JSON.stringify(documentData, null, 2)}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.4, delay: index * 0.05 }}
-                      className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                      className={`flex ${
+                        message.role === "user"
+                          ? "justify-end"
+                          : "justify-start"
+                      }`}
                     >
-                      <div className={`max-w-[80%] ${message.role === 'user' ? 'order-2' : 'order-1'}`}>
-                        <div className={`flex items-start space-x-3 ${message.role === 'user' ? 'flex-row-reverse space-x-reverse' : ''}`}>
+                      <div
+                        className={`max-w-[80%] ${
+                          message.role === "user" ? "order-2" : "order-1"
+                        }`}
+                      >
+                        <div
+                          className={`flex items-start space-x-3 ${
+                            message.role === "user"
+                              ? "flex-row-reverse space-x-reverse"
+                              : ""
+                          }`}
+                        >
                           {/* Avatar */}
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                            message.role === 'user' 
-                              ? 'bg-[#6e1d27] text-white' 
-                              : 'bg-[#6e1d27]/10 text-[#6e1d27]'
-                          }`}>
-                            {message.role === 'user' ? (
+                          <div
+                            className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                              message.role === "user"
+                                ? "bg-[#6e1d27] text-white"
+                                : "bg-[#6e1d27]/10 text-[#6e1d27]"
+                            }`}
+                          >
+                            {message.role === "user" ? (
                               <User className="w-4 h-4" />
                             ) : (
                               <Bot className="w-4 h-4" />
@@ -504,16 +571,30 @@ ${JSON.stringify(documentData, null, 2)}
                           </div>
 
                           {/* Message Content */}
-                          <div className={`flex-1 ${message.role === 'user' ? 'text-right' : 'text-left'}`}>
-                            <div className={`inline-block p-4 rounded-lg ${
-                              message.role === 'user'
-                                ? 'bg-[#6e1d27] text-white hand-drawn-border'
-                                : 'bg-white border border-[#6e1d27]/20 text-[#3d0e15] hand-drawn-border'
-                            }`}>
+                          <div
+                            className={`flex-1 ${
+                              message.role === "user"
+                                ? "text-right"
+                                : "text-left"
+                            }`}
+                          >
+                            <div
+                              className={`inline-block p-4 rounded-lg ${
+                                message.role === "user"
+                                  ? "bg-[#6e1d27] text-white hand-drawn-border"
+                                  : "bg-white border border-[#6e1d27]/20 text-[#3d0e15] hand-drawn-border"
+                              }`}
+                            >
                               <div className="font-ibm-plex whitespace-pre-line">
-                                {message.content.split('**').map((part, i) => 
-                                  i % 2 === 0 ? part : <strong key={i}>{part}</strong>
-                                )}
+                                {message.content
+                                  .split("**")
+                                  .map((part, i) =>
+                                    i % 2 === 0 ? (
+                                      part
+                                    ) : (
+                                      <strong key={i}>{part}</strong>
+                                    )
+                                  )}
                               </div>
                             </div>
                             <p className="text-xs text-[#6e1d27]/60 font-ibm-plex mt-1">
@@ -540,11 +621,22 @@ ${JSON.stringify(documentData, null, 2)}
                       <div className="bg-white border border-[#6e1d27]/20 text-[#3d0e15] p-4 rounded-lg hand-drawn-border">
                         <div className="flex items-center space-x-2">
                           <div className="flex space-x-1">
-                            <div className="w-2 h-2 bg-[#6e1d27] rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                            <div className="w-2 h-2 bg-[#6e1d27] rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                            <div className="w-2 h-2 bg-[#6e1d27] rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                            <div
+                              className="w-2 h-2 bg-[#6e1d27] rounded-full animate-bounce"
+                              style={{ animationDelay: "0ms" }}
+                            ></div>
+                            <div
+                              className="w-2 h-2 bg-[#6e1d27] rounded-full animate-bounce"
+                              style={{ animationDelay: "150ms" }}
+                            ></div>
+                            <div
+                              className="w-2 h-2 bg-[#6e1d27] rounded-full animate-bounce"
+                              style={{ animationDelay: "300ms" }}
+                            ></div>
                           </div>
-                          <span className="text-sm text-[#6e1d27] font-ibm-plex">DatrixAI is thinking...</span>
+                          <span className="text-sm text-[#6e1d27] font-ibm-plex">
+                            DatrixAI is thinking...
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -569,7 +661,7 @@ ${JSON.stringify(documentData, null, 2)}
                         Drop your file here
                       </h3>
                       <p className="text-[#6e1d27] font-ibm-plex">
-                        I'll process it and help you organize the data
+                        I&apos;ll process it and help you organize the data
                       </p>
                     </div>
                   </motion.div>
@@ -579,36 +671,36 @@ ${JSON.stringify(documentData, null, 2)}
               {/* Input Area - Fixed at bottom */}
               <div className="p-6 border-t border-[#6e1d27]/20 flex-shrink-0">
                 <form onSubmit={handleSubmit}>
-                <div className="flex items-end space-x-3">
-                  <div className="flex-1">
-                    <div className="relative">
-                      <Input
+                  <div className="flex items-end space-x-3">
+                    <div className="flex-1">
+                      <div className="relative">
+                        <Input
                           value={input}
                           onChange={handleInputChange}
-                        placeholder="Type your data or describe what you want to organize..."
-                        className="hand-drawn-input bg-white/80 border-2 border-[#6e1d27] text-[#3d0e15] placeholder-[#6e1d27]/60 font-ibm-plex pr-12"
+                          placeholder="Type your data or describe what you want to organize..."
+                          className="hand-drawn-input bg-white/80 border-2 border-[#6e1d27] text-[#3d0e15] placeholder-[#6e1d27]/60 font-ibm-plex pr-12"
                           disabled={isLoading}
-                      />
-                      <Button
-                        onClick={() => fileInputRef.current?.click()}
-                        variant="ghost"
-                        size="sm"
+                        />
+                        <Button
+                          onClick={() => fileInputRef.current?.click()}
+                          variant="ghost"
+                          size="sm"
                           type="button"
-                        className="absolute right-2 top-1/2 transform -translate-y-1/2 text-[#6e1d27] hover:text-[#3d0e15] hover:bg-[#6e1d27]/10"
+                          className="absolute right-2 top-1/2 transform -translate-y-1/2 text-[#6e1d27] hover:text-[#3d0e15] hover:bg-[#6e1d27]/10"
                           disabled={isLoading}
-                      >
-                        <Paperclip className="w-4 h-4" />
-                      </Button>
+                        >
+                          <Paperclip className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                  <Button
+                    <Button
                       type="submit"
                       disabled={!input.trim() || isLoading}
-                    className="hand-drawn-button bg-[#6e1d27] hover:bg-[#912d3c] text-white font-ibm-plex disabled:opacity-50"
-                  >
-                    <Send className="w-4 h-4" />
-                  </Button>
-                </div>
+                      className="hand-drawn-button bg-[#6e1d27] hover:bg-[#912d3c] text-white font-ibm-plex disabled:opacity-50"
+                    >
+                      <Send className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </form>
 
                 {/* File input */}
@@ -627,13 +719,33 @@ ${JSON.stringify(documentData, null, 2)}
 
               {/* Bottom decorative doodles */}
               <div className="absolute bottom-2 left-2 w-6 h-3 opacity-20 z-10">
-                <svg viewBox="0 0 32 16" className="w-full h-full text-[#6e1d27]">
-                  <path d="M2 8 Q8 2 16 8 T30 8" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="hand-drawn-path" />
+                <svg
+                  viewBox="0 0 32 16"
+                  className="w-full h-full text-[#6e1d27]"
+                >
+                  <path
+                    d="M2 8 Q8 2 16 8 T30 8"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    className="hand-drawn-path"
+                  />
                 </svg>
               </div>
               <div className="absolute bottom-2 right-2 w-4 h-4 opacity-20 z-10">
-                <svg viewBox="0 0 24 24" className="w-full h-full text-[#6e1d27]">
-                  <path d="M12 2 L22 12 L12 22 L2 12 Z" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="hand-drawn-path" />
+                <svg
+                  viewBox="0 0 24 24"
+                  className="w-full h-full text-[#6e1d27]"
+                >
+                  <path
+                    d="M12 2 L22 12 L12 22 L2 12 Z"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    className="hand-drawn-path"
+                  />
                 </svg>
               </div>
             </div>

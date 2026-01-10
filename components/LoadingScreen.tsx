@@ -1,51 +1,26 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { AppleHelloEnglishEffect } from '@/components/ui/apple-hello-effect';
-import { usePathname } from 'next/navigation';
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { usePathname } from "next/navigation";
 
 export default function LoadingScreen() {
-  const [showTypewriter, setShowTypewriter] = useState(false);
-  const [typewriterText, setTypewriterText] = useState('');
   const [showContent, setShowContent] = useState(false);
   const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
 
-  const welcomeText = 'Welcome to Datrix';
-  const isLandingPage = pathname === '/';
+  const isLandingPage = pathname === "/";
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Handle Apple Hello animation completion
-  const handleHelloComplete = () => {
-    setTimeout(() => {
-      setShowTypewriter(true);
-    }, 500); // Small delay after hello completes
-  };
-
-  // Typewriter effect for landing page
+  // Skip animation for landing page - show content immediately
   useEffect(() => {
-    if (!showTypewriter || !isLandingPage) return;
-
-    let currentIndex = 0;
-    const typeInterval = setInterval(() => {
-      if (currentIndex <= welcomeText.length) {
-        setTypewriterText(welcomeText.slice(0, currentIndex));
-        currentIndex++;
-      } else {
-        clearInterval(typeInterval);
-        // Show content after typewriter completes + 1 second pause
-        setTimeout(() => {
-          setShowContent(true);
-        }, 1000);
-      }
-    }, 80); // Typing speed
-
-    return () => clearInterval(typeInterval);
-  }, [showTypewriter, isLandingPage]);
+    if (isLandingPage && mounted) {
+      setShowContent(true);
+    }
+  }, [isLandingPage, mounted]);
 
   // For non-landing pages, show simple loading for 2 seconds
   useEffect(() => {
@@ -99,51 +74,18 @@ export default function LoadingScreen() {
           >
             {/* Container for perfect centering */}
             <div className="w-full h-full flex items-center justify-center p-4">
-              {isLandingPage ? (
-                <div className="flex flex-col items-center justify-center w-full max-w-md mx-auto text-center">
-                  {/* Apple Hello Effect for Landing Page */}
-                  <div className="mb-6 sm:mb-8">
-                    <AppleHelloEnglishEffect
-                      className="h-12 sm:h-16 md:h-20 lg:h-24 text-[#6e1d27]"
-                      speed={1.2}
-                      onAnimationComplete={handleHelloComplete}
-                    />
-                  </div>
-
-                  {/* Typewriter Text for Landing Page */}
-                  <AnimatePresence>
-                    {showTypewriter && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5, ease: "easeOut" }}
-                        className="w-full"
-                      >
-                        <h2 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-medium text-[#3d0e15] font-ibm-plex tracking-wide">
-                          {typewriterText}
-                          <motion.span
-                            className="inline-block w-0.5 h-5 sm:h-6 md:h-8 lg:h-10 bg-[#6e1d27] ml-1"
-                            animate={{ opacity: [1, 0] }}
-                            transition={{ duration: 0.8, repeat: Infinity, ease: "easeInOut" }}
-                          />
-                        </h2>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center">
-                  {/* Simple Loading Text for Other Pages */}
-                  <motion.h2
-                    className="text-2xl sm:text-3xl md:text-4xl font-medium text-[#3d0e15] font-ibm-plex tracking-wide"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, ease: "easeOut" }}
-                  >
-                    LOADING<AnimatedDots />
-                  </motion.h2>
-                </div>
-              )}
+              <div className="flex flex-col items-center justify-center">
+                {/* Simple Loading Text for Other Pages */}
+                <motion.h2
+                  className="text-2xl sm:text-3xl md:text-4xl font-medium text-[#3d0e15] font-ibm-plex tracking-wide"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, ease: "easeOut" }}
+                >
+                  LOADING
+                  <AnimatedDots />
+                </motion.h2>
+              </div>
             </div>
 
             {/* Subtle background pattern */}
