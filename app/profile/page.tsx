@@ -35,7 +35,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import { OnboardingNavbar } from '@/components/Navbar';
-import { saveUserDataSource, deleteUserDataSource, getUserDataSources } from '@/lib/saveDataSource';
+import { saveUserDataSource, deleteUserDataSource, getUserDataSources, type DataSourceType } from '@/lib/saveDataSource';
 
 interface Integration {
   id: string;
@@ -127,6 +127,13 @@ export default function ProfilePage() {
       name: 'Airtable',
       icon: Database,
       color: '#ffb700',
+      connected: false
+    },
+    {
+      id: 'gmail',
+      name: 'Gmail Inbox',
+      icon: Mail,
+      color: '#ea4335',
       connected: false
     },
     {
@@ -324,7 +331,7 @@ export default function ProfilePage() {
     }
   };
 
-  const handleDisconnectIntegration = async (integrationId: 'airtable' | 'postgres') => {
+  const handleDisconnectIntegration = async (integrationId: DataSourceType) => {
     try {
       await deleteUserDataSource(user.id, integrationId);
       setIntegrations(prev =>
@@ -369,6 +376,38 @@ export default function ProfilePage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleConnectGmail = async () => {
+    if (!user?.id) return;
+
+    const { data: { session } } = await supabase.auth.getSession();
+
+    if (!session?.access_token) {
+      alert('Please sign in again before connecting Gmail.');
+      return;
+    }
+
+    const response = await fetch('/api/integrations/gmail/connect', {
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        'x-gmail-oauth-response': 'json',
+      },
+    });
+
+    if (!response.ok) {
+      alert('Unable to start Gmail connection. Please try again.');
+      return;
+    }
+
+    const data = await response.json();
+
+    if (!data.url) {
+      alert('Unable to start Gmail connection. Please try again.');
+      return;
+    }
+
+    window.location.href = data.url;
   };
 
   const handleSendFeedback = async () => {
@@ -833,15 +872,25 @@ export default function ProfilePage() {
                       
                       {integration.connected ? (
                         <div className="flex gap-2">
+                          {integration.id === 'gmail' ? (
+                            <Button
+                              onClick={handleConnectGmail}
+                              className="hand-drawn-button bg-[#6e1d27] hover:bg-[#912d3c] text-white font-ibm-plex text-xs px-2 py-1 h-7"
+                              size="sm"
+                            >
+                              Reconnect
+                            </Button>
+                          ) : (
+                            <Button
+                              onClick={() => { setSelectedModal(integration.id); setModalInputs(integration.credentials || {}); }}
+                              className="hand-drawn-button bg-[#6e1d27] hover:bg-[#912d3c] text-white font-ibm-plex text-xs px-2 py-1 h-7"
+                              size="sm"
+                            >
+                              Edit
+                            </Button>
+                          )}
                           <Button
-                            onClick={() => { setSelectedModal(integration.id); setModalInputs(integration.credentials || {}); }}
-                            className="hand-drawn-button bg-[#6e1d27] hover:bg-[#912d3c] text-white font-ibm-plex text-xs px-2 py-1 h-7"
-                            size="sm"
-                          >
-                            Edit
-                          </Button>
-                          <Button
-                            onClick={() => handleDisconnectIntegration(integration.id as 'airtable' | 'postgres')}
+                            onClick={() => handleDisconnectIntegration(integration.id as DataSourceType)}
                             variant="outline"
                             className="hand-drawn-border border-2 border-red-500 text-red-600 hover:bg-red-50 font-ibm-plex text-xs px-2 py-1 h-7"
                             size="sm"
@@ -856,6 +905,14 @@ export default function ProfilePage() {
                           className="w-full hand-drawn-button bg-[#6e1d27] hover:bg-[#912d3c] text-white font-ibm-plex text-xs h-7"
                         >
                           Connect
+                        </Button>
+                      ) : integration.id === 'gmail' ? (
+                        <Button
+                          onClick={handleConnectGmail}
+                          size="sm"
+                          className="w-full hand-drawn-button bg-[#6e1d27] hover:bg-[#912d3c] text-white font-ibm-plex text-xs h-7"
+                        >
+                          Connect Gmail inbox
                         </Button>
                       ) : (
                         <div className="text-center">

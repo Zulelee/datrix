@@ -1,16 +1,18 @@
 import { supabase } from './supabaseClient';
 import { encrypt, decrypt } from './encryption';
 
+export type DataSourceType = 'airtable' | 'postgres' | 'gmail';
+
 export async function saveUserDataSource(
   userId: string,
-  sourceType: 'airtable' | 'postgres',
+  sourceType: DataSourceType,
   credentials: any
 ) {
   // Encrypt each credential value
   const encryptedCredentials = await Promise.all(
     Object.entries(credentials).map(async ([key, value]) => [
       key,
-      await encrypt(value as string, userId)
+      await encrypt(value == null ? '' : String(value), userId)
     ])
   );
 
@@ -28,7 +30,7 @@ export async function saveUserDataSource(
   return { data, error };
 }
 
-export async function deleteUserDataSource(userId: string, sourceType: 'airtable' | 'postgres') {
+export async function deleteUserDataSource(userId: string, sourceType: DataSourceType) {
   return await supabase
     .from('user_data_sources')
     .delete()
